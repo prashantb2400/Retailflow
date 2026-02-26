@@ -1,0 +1,1927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RetailFlow — Smart Invoicing</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F6F3EE;--surf:#FFF;--surf2:#EDEAE3;--bor:#DDD8CF;
+  --tx:#1C1915;--tx2:#7A746C;--acc:#BF4A2B;--acc2:#E07A5F;
+  --grn:#2B6E4A;--gnb:#E8F4EE;--ylw:#9A6D1E;--ylb:#FBF4E4;
+  --red:#BF4A2B;--rdb:#FAEDEA;--blu:#2655A0;--blb:#EAF0FB;
+  --pur:#6B3FA0;--pub:#F0EAF8;
+  --sh:0 2px 8px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+  --shlg:0 12px 40px rgba(0,0,0,.12);
+  --r:13px;--ff:'Sora',sans-serif;--ffd:'Playfair Display',serif;
+}
+[data-dark]{
+  --bg:#131110;--surf:#1D1A17;--surf2:#232019;--bor:#302C27;
+  --tx:#F0EDE6;--tx2:#9A948C;--acc:#E07A5F;--acc2:#BF4A2B;
+  --gnb:#152618;--ylb:#221B0C;--rdb:#261511;--blb:#111B2B;--pub:#1e1528;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--tx);min-height:100vh;transition:background .25s,color .25s}
+button,input,select,textarea,datalist{font-family:var(--ff)}
+.topbar{position:sticky;top:0;z-index:99;height:56px;background:var(--surf);border-bottom:1px solid var(--bor);display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:8px}
+.logo{font-family:var(--ffd);font-size:18px;color:var(--acc);letter-spacing:-.4px;white-space:nowrap;flex-shrink:0}
+.logo b{color:var(--tx)}
+.mtog{display:flex;background:var(--surf2);border:1.5px solid var(--bor);border-radius:9px;padding:3px;gap:2px;overflow-x:auto;max-width:100%}
+.mbtn{border:none;background:transparent;padding:4px 10px;border-radius:7px;font-size:11px;font-weight:500;color:var(--tx2);transition:all .18s;white-space:nowrap;cursor:pointer}
+.mbtn.on{background:var(--acc);color:#fff}
+.tbr{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.wrap{max-width:1080px;margin:0 auto;padding:22px 16px}
+.card{background:var(--surf);border:1.5px solid var(--bor);border-radius:var(--r);box-shadow:var(--sh);padding:20px}
+.ctitle{font-family:var(--ffd);font-size:17px;margin-bottom:14px;color:var(--tx)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:11px}
+@media(max-width:720px){.g2,.g3,.g4,.g5{grid-template-columns:1fr 1fr}}
+@media(max-width:420px){.g2,.g3{grid-template-columns:1fr}}
+.fld{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.fld label{font-size:10px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.55px}
+.fld input,.fld select,.fld textarea{padding:8px 12px;border:1.5px solid var(--bor);border-radius:8px;background:var(--surf2);color:var(--tx);font-size:13px;outline:none;transition:border .18s;width:100%}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(191,74,43,.10)}
+.fld textarea{resize:vertical}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;border:none;font-size:13px;font-weight:500;transition:all .18s;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+.bpri{background:var(--acc);color:#fff}.bpri:hover{background:var(--acc2);transform:translateY(-1px)}
+.bgho{background:transparent;color:var(--tx2);border:1.5px solid var(--bor)}.bgho:hover{background:var(--surf2);color:var(--tx)}
+.bdng{background:var(--rdb);color:var(--red);border:1.5px solid transparent}.bdng:hover{background:var(--red);color:#fff}
+.bwa{background:#25D366;color:#fff;border:none}.bwa:hover{background:#1fb558}
+.bgrn{background:var(--grn);color:#fff;border:none}.bgrn:hover{opacity:.88}
+.bblu{background:var(--blu);color:#fff;border:none}.bblu:hover{opacity:.88}
+.bsm{padding:4px 9px;font-size:11px;border-radius:7px}
+.wfull{width:100%;justify-content:center}
+.ibtn{width:32px;height:32px;border-radius:8px;border:1.5px solid var(--bor);background:var(--surf2);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .18s;cursor:pointer}
+.ibtn:hover{background:var(--bor)}
+.bdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
+.bc{background:var(--rdb);color:var(--red)}.bca{background:var(--gnb);color:var(--grn)}
+.bu{background:var(--blb);color:var(--blu)}.bch{background:var(--ylb);color:var(--ylw)}
+.bp{background:var(--gnb);color:var(--grn)}.bpu{background:var(--pub);color:var(--pur)}
+.bcnt{background:var(--acc);color:#fff;border-radius:20px;padding:1px 6px;font-size:10px;margin-left:2px}
+.tabs{display:flex;border-bottom:1.5px solid var(--bor);margin-bottom:18px;gap:1px;overflow-x:auto}
+.tab{border:none;background:transparent;padding:8px 13px;font-size:12px;font-weight:500;color:var(--tx2);border-bottom:2px solid transparent;margin-bottom:-1.5px;transition:all .18s;white-space:nowrap;cursor:pointer}
+.tab.on{color:var(--acc);border-bottom-color:var(--acc)}
+.twrap{overflow-x:auto;border-radius:9px;border:1.5px solid var(--bor)}
+table{width:100%;border-collapse:collapse}
+th{padding:8px 11px;text-align:left;font-size:10px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;background:var(--surf2);border-bottom:1.5px solid var(--bor)}
+td{padding:9px 11px;font-size:12px;border-bottom:1px solid var(--bor)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surf2)}
+.sc{background:var(--surf);border:1.5px solid var(--bor);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh)}
+.sl{font-size:10px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.sv{font-family:var(--ffd);font-size:20px;color:var(--tx)}
+.ss{font-size:11px;color:var(--tx2);margin-top:2px}
+.trow{display:flex;gap:5px;flex-wrap:wrap}
+.tag{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:500;border:1.5px solid var(--bor);background:var(--surf2);color:var(--tx2);transition:all .18s;cursor:pointer}
+.tag.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.sh{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:10px;flex-wrap:wrap}
+.st{font-family:var(--ffd);font-size:23px;color:var(--tx)}
+.sb{font-size:12px;color:var(--tx2);margin-top:3px}
+hr{border:none;border-top:1.5px solid var(--bor);margin:14px 0}
+.frow{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.fbtn{padding:4px 11px;border-radius:20px;border:1.5px solid var(--bor);background:var(--surf2);color:var(--tx2);font-size:11px;font-weight:500;cursor:pointer;transition:all .18s}
+.fbtn.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+/* Invoice item table */
+.it{width:100%;border-collapse:collapse;min-width:700px}
+.it th{font-size:10px;font-weight:600;color:var(--tx2);text-transform:uppercase;padding:5px 7px;border-bottom:1.5px solid var(--bor);background:transparent;letter-spacing:.4px}
+.it td{padding:4px 4px;font-size:12px;border:none;vertical-align:middle}
+.iinput{width:100%;padding:6px 8px;border:1.5px solid var(--bor);border-radius:7px;background:var(--surf2);color:var(--tx);font-size:12px;outline:none;font-family:var(--ff)}
+.iinput:focus{border-color:var(--acc)}
+.iinput.ro{background:transparent;border-color:transparent;font-weight:600;color:var(--tx);padding-left:0}
+/* Modals */
+.mover{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
+.modal{background:var(--surf);border-radius:18px;padding:24px;width:100%;max-width:520px;box-shadow:var(--shlg);margin:auto}
+.mtit{font-family:var(--ffd);font-size:19px;margin-bottom:12px}
+.rmtxt{background:var(--surf2);border:1.5px solid var(--bor);border-radius:9px;padding:13px;font-size:13px;line-height:1.75;color:var(--tx);white-space:pre-wrap;max-height:200px;overflow-y:auto}
+.alert{padding:9px 13px;border-radius:9px;font-size:12px;margin-bottom:12px;line-height:1.5}
+.aerr{background:var(--rdb);color:var(--red)}.aok{background:var(--gnb);color:var(--grn)}
+.awrn{background:var(--ylb);color:var(--ylw)}.ainfo{background:var(--blb);color:var(--blu)}
+/* Setup */
+.cwrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg)}
+.ccard{background:var(--surf);border:1.5px solid var(--bor);border-radius:20px;padding:32px;width:100%;max-width:560px;box-shadow:var(--shlg)}
+.biglogo{font-family:var(--ffd);font-size:30px;color:var(--acc);margin-bottom:4px}
+.asub{font-size:13px;color:var(--tx2);margin-bottom:20px}
+.sechead{font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.7px;padding:10px 0 8px;border-bottom:1.5px solid var(--bor);margin-bottom:14px;margin-top:6px}
+/* Misc */
+.empty{text-align:center;padding:40px 20px;color:var(--tx2)}
+.eico{font-size:38px;margin-bottom:8px}.etit{font-size:14px;font-weight:500;color:var(--tx);margin-bottom:3px}
+.row{display:flex;align-items:center;gap:8px}
+.jbet{justify-content:space-between}
+.mb8{margin-bottom:8px}.mb14{margin-bottom:14px}.mt8{margin-top:8px}.mt14{margin-top:14px}.mt18{margin-top:18px}
+.tx2{color:var(--tx2)}.txacc{color:var(--acc)}.txgrn{color:var(--grn)}.txred{color:var(--red)}
+.fw6{font-weight:600}.fs10{font-size:10px}.fs11{font-size:11px}.fs12{font-size:12px}.fs13{font-size:13px}
+.lsnotice{background:var(--gnb);border:1.5px solid #b8dfc8;border-radius:10px;padding:10px 13px;font-size:12px;color:#1f5c39;margin-bottom:16px;line-height:1.6}
+/* Partial payment bar */
+.paybar-wrap{background:var(--surf2);border:1.5px solid var(--bor);border-radius:10px;padding:14px;margin-top:10px}
+.paybar-track{height:8px;background:var(--bor);border-radius:99px;overflow:hidden;margin:8px 0}
+.paybar-fill{height:100%;background:var(--grn);border-radius:99px;transition:width .3s}
+/* GST month accordion */
+.gst-month{background:var(--surf);border:1.5px solid var(--bor);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.gst-mhead{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none}
+.gst-mhead:hover{background:var(--surf2)}
+.gst-mbody{padding:14px 16px;border-top:1.5px solid var(--bor)}
+.gst-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12px;border-bottom:1px solid var(--bor)}
+.gst-row:last-child{border-bottom:none}
+/* Payment ledger */
+.pay-ledger{border:1.5px solid var(--bor);border-radius:10px;overflow:hidden}
+.pay-hdr{background:var(--surf2);padding:7px 12px;font-size:10px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;display:grid;grid-template-columns:80px 1fr 70px 90px 80px 32px;gap:6px}
+.pay-row{padding:8px 12px;font-size:12px;display:grid;grid-template-columns:80px 1fr 70px 90px 80px 32px;gap:6px;align-items:center;border-top:1px solid var(--bor)}
+.pay-row:hover{background:var(--surf2)}
+@media(max-width:600px){.pay-hdr,.pay-row{grid-template-columns:70px 1fr 70px 70px 32px}.pay-hdr span:nth-child(4),.pay-row span:nth-child(4){display:none}}
+/* Thermal */
+.thermal-preview{background:#fff;color:#000;font-family:'Courier New',monospace;font-size:11px;border:1.5px dashed var(--bor);border-radius:10px;padding:14px;max-width:290px;margin:0 auto}
+.thr-center{text-align:center}.thr-line{border-top:1px dashed #888;margin:5px 0}
+.thr-row{display:flex;justify-content:space-between;font-size:11px;margin:2px 0}
+/* Inventory */
+.inv-item{background:var(--surf);border:1.5px solid var(--bor);border-radius:10px;padding:13px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.stock-low{border-color:#e8c97a;background:var(--ylb)}
+/* Toggle switch */
+.tgl-wrap{display:flex;gap:8px}
+.tgl{display:inline-flex;background:var(--surf2);border:1.5px solid var(--bor);border-radius:9px;padding:3px;gap:2px}
+.tgl button{border:none;background:transparent;padding:5px 14px;border-radius:7px;font-size:12px;font-weight:500;color:var(--tx2);cursor:pointer;transition:all .18s}
+.tgl button.on{background:var(--acc);color:#fff}
+@media print{.no-print{display:none!important}body{background:#fff}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ══════════════════════════════════════════════════
+   RetailFlow v3
+   Features: 19-item list fully implemented
+   GST 2.0 slabs (Sept 2025): 0, 5, 18, 40%
+══════════════════════════════════════════════════ */
+
+/* ── CONSTANTS ──────────────────────────────────── */
+const GST_SLABS = [0, 5, 18, 40];
+const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Jammu & Kashmir','Ladakh','Chandigarh','Puducherry','Andaman & Nicobar Islands','Dadra & Nagar Haveli','Daman & Diu','Lakshadweep'];
+const UNITS = ['pcs','kg','g','litre','ml','box','bag','dozen','pair','set','roll','sheet','metre'];
+const EXP_CATS = ['Rent','Electricity','Staff Salary','Transport','Packaging','Maintenance','Marketing','Miscellaneous'];
+const ECOL = {'Rent':'bc','Electricity':'bch','Staff Salary':'bu','Transport':'bca','Packaging':'bpu','Maintenance':'bch','Marketing':'bc','Miscellaneous':''};
+const PAY_METHODS = ['cash','upi','credit','cheque']; // partial is a separate toggle, not a method
+
+/* ── STORAGE ────────────────────────────────────── */
+const LS = {
+  get:(k,d)=>{try{const v=localStorage.getItem(k);return v!=null?JSON.parse(v):d;}catch{return d;}},
+  set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+};
+
+/* ── STATE ──────────────────────────────────────── */
+const S = {
+  firm:       LS.get('rf_firm',null),
+  customers:  LS.get('rf_customers',[]),
+  invoices:   LS.get('rf_invoices',[]),
+  purchases:  LS.get('rf_purchases',[]),
+  sales:      LS.get('rf_sales',[]),
+  expenses:   LS.get('rf_expenses',[]),
+  payments:   LS.get('rf_payments',[]),
+  inventory:  LS.get('rf_inventory',[]),
+  inv_counters: LS.get('rf_inv_counters',{}),
+  dark:       LS.get('rf_dark',false),
+  mode:'invoice', page:'main', tab:'create', bizTab:'dash',
+  invFilter:'all', custFilter:'all', fyFilter:'all',
+  reminder:null, viewInv:null, payModal:null,
+  thermalInv:null, waInv:null, _editFirmOpen:false,
+  invForm:null, pForm:null, sForm:null, efForm:null, invItemForm:null,
+  _reminderMsg:'', _partialPct:0,
+};
+
+const save = () => {
+  ['firm','customers','invoices','purchases','sales','expenses','payments','inventory','inv_counters','dark'].forEach(k=>LS.set('rf_'+k,S[k]));
+};
+
+/* ── UTILITIES ──────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const uid = () => Math.random().toString(36).slice(2,9);
+const today = () => new Date().toISOString().split('T')[0];
+const fmt = n => '₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const pb = m => ({cash:'bca',upi:'bu',credit:'bc',cheque:'bch',partial:'bpu',paid:'bp',unpaid:'bc',bank:'bu'})[m]||'';
+
+function getFY(dateStr) {
+  if(!dateStr) return '';
+  const d = new Date(dateStr+'T00:00:00');
+  const y = d.getFullYear(), m = d.getMonth();
+  const s = m >= 3 ? y : y-1;
+  return `${s}-${String(s+1).slice(2)}`;
+}
+
+function monthLabel(d) {
+  if(!d) return '';
+  const[y,mo]=d.split('-');
+  return new Date(y,Number(mo)-1,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+}
+
+function fyLabel(fy) {
+  if(!fy) return '';
+  const[a,b]=fy.split('-');
+  return `FY ${a}-${b}`;
+}
+
+function getNextInvNo(date) {
+  const d = new Date((date||today())+'T00:00:00');
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const fy = getFY(date||today());
+  const key = `${fy}/${mm}`;
+  const n = (S.inv_counters[key]||0) + 1;
+  return { no:`I-${yy}/${mm}/${String(n).padStart(3,'0')}`, key, n };
+}
+
+function commitInvNo(key, n) {
+  S.inv_counters[key] = n;
+}
+
+/* ── PER-ITEM GST CALC ──────────────────────────── */
+function calcItem(item, isReg) {
+  const qty = Number(item.qty)||0;
+  const rate = Number(item.rate)||0;
+  const disc = Math.min(100, Math.max(0, Number(item.discount)||0));
+  const gst = isReg ? (Number(item.gst_rate)||0) : 0;
+  const gross = qty * rate;
+  const discAmt = gross * disc / 100;
+  const taxable = gross - discAmt;
+  const gstAmt = taxable * gst / 100;
+  const cgst = gstAmt / 2;
+  const sgst = gstAmt / 2;
+  const total = taxable + gstAmt;
+  return { gross, discAmt, taxable, gstAmt, cgst, sgst, total };
+}
+
+function buildInvTotals(items, isReg) {
+  let subtotal=0, totalDisc=0, totalTaxable=0, totalGST=0, grandTotal=0;
+  const gstSummary = {};
+  items.forEach(item => {
+    const c = calcItem(item, isReg);
+    subtotal += c.gross;
+    totalDisc += c.discAmt;
+    totalTaxable += c.taxable;
+    totalGST += c.gstAmt;
+    grandTotal += c.total;
+    const r = isReg ? (Number(item.gst_rate)||0) : 0;
+    if(!gstSummary[r]) gstSummary[r]={taxable:0,gst:0,cgst:0,sgst:0};
+    gstSummary[r].taxable += c.taxable;
+    gstSummary[r].gst += c.gstAmt;
+    gstSummary[r].cgst += c.cgst;
+    gstSummary[r].sgst += c.sgst;
+  });
+  return {subtotal, totalDisc, totalTaxable, totalGST, grandTotal, gstSummary};
+}
+
+/* ── BLANK FORMS ────────────────────────────────── */
+const blankItem = () => ({
+  id:uid(), name:'', qty:1, rate:'', discount:0,
+  gst_rate: S.firm?.default_gst_rate ?? 18
+});
+const blankInv = () => ({
+  customer_name:'', customer_phone:'',
+  payment_method: S.firm?.payment_method||'cash',
+  is_partial: false,
+  partial_amount:0, due_date:'', date:today(),
+  notes: S.firm?.default_notes||'',
+  status:'paid',
+  items:[blankItem()]
+});
+const blankP = () => ({supplier:'',item:'',amount:'',date:today(),status:'paid'});
+const blankS = () => ({customer:'',amount:'',date:today(),payment_type:'cash'});
+const blankEf = () => ({category:'Rent',description:'',amount:'',date:today()});
+const blankInvItem = () => ({id:uid(),name:'',unit:'pcs',rate:0,gst_rate:18,stock:0});
+
+function setDark(v){
+  S.dark=v; LS.set('rf_dark',v);
+  v ? document.documentElement.setAttribute('data-dark','') : document.documentElement.removeAttribute('data-dark');
+}
+
+/* ══════════════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════════════ */
+function render() {
+  const app = $('app'); if(!app) return;
+  if(S.dark) document.documentElement.setAttribute('data-dark','');
+  if(!S.firm){ app.innerHTML = renderSetup(); return; }
+  if(!S.invForm) S.invForm = blankInv();
+  if(!S.pForm)   S.pForm   = blankP();
+  if(!S.sForm)   S.sForm   = blankS();
+  if(!S.efForm)  S.efForm  = blankEf();
+  if(!S.invItemForm) S.invItemForm = blankInvItem();
+  let modals = '';
+  if(S.reminder)       modals += renderReminderModal();
+  if(S.payModal)       modals += renderPayModal();
+  if(S.thermalInv)     modals += renderThermalModal();
+  if(S.waInv)          modals += renderWAInvModal();
+  if(S._editFirmOpen)  modals += renderEditFirmModal();
+  app.innerHTML = renderTopbar() + `<div class="wrap">` + renderMain() + `</div>` + modals;
+  if(S.mode==='invoice' && S.tab==='create' && S.page==='main'){
+    renderItemRows(); updateTotals(); attachCustAC();
+  }
+  postRender();
+}
+
+function postRender(){
+  // Partial bar live update
+  const pam = $('ic-pam');
+  if(pam) pam.addEventListener('input', updatePartialBar);
+}
+
+/* ══════════════════════════════════════════════════
+   SETUP
+══════════════════════════════════════════════════ */
+function renderSetup() {
+  const gst = S._setupGST || false;
+  return `<div class="cwrap"><div class="ccard">
+    <div class="row jbet mb14">
+      <div><div class="biglogo">RetailFlow</div><div class="asub">Set up your business — takes 2 minutes</div></div>
+      <button class="ibtn" onclick="toggleDark()">${S.dark?'☀️':'🌙'}</button>
+    </div>
+    <div class="lsnotice">✅ All data saves automatically in your browser. Works offline.</div>
+
+    <div class="sechead">Business Info</div>
+    <div class="fld"><label>Firm / Business Name *</label><input id="sf-nm" placeholder="e.g. Sharma General Store"></div>
+    <div class="g2">
+      <div class="fld"><label>Proprietor Name *</label><input id="sf-pr" placeholder="Your full name"></div>
+      <div class="fld"><label>Phone</label><input id="sf-ph" placeholder="Mobile number" type="tel"></div>
+    </div>
+    <div class="fld"><label>Business Address *</label><textarea id="sf-ad" rows="2" placeholder="Shop no., Street, City, State — PIN"></textarea></div>
+
+    <div class="sechead">GST Status</div>
+    <div class="fld">
+      <label>Are you GST Registered?</label>
+      <div class="tgl">
+        <button class="${!gst?'on':''}" onclick="setSetupGST(false)">❌ No — Bill of Supply</button>
+        <button class="${gst?'on':''}" onclick="setSetupGST(true)">✅ Yes — Tax Invoice</button>
+      </div>
+      <div class="fs11 tx2 mt8">${gst
+        ? 'You will issue <b>Tax Invoices</b> with CGST + SGST per item.'
+        : 'You will issue <b>Bills of Supply</b>. No GST charged to customers.'}</div>
+    </div>
+    ${gst ? `
+    <div class="g2">
+      <div class="fld"><label>GSTIN *</label><input id="sf-gs" placeholder="22AAAAA0000A1Z5" maxlength="15" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fld"><label>State *</label>
+        <select id="sf-st"><option value="">Select state…</option>${STATES.map(s=>`<option>${esc(s)}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="fld"><label>Default Item GST Rate</label>
+      <select id="sf-gr">${GST_SLABS.map(r=>`<option value="${r}"${r===18?' selected':''}>${r}% GST</option>`).join('')}</select>
+    </div>` : ''}
+
+    <div class="sechead">Payment & UPI</div>
+    <div class="g2">
+      <div class="fld"><label>Default Payment Method</label>
+        <select id="sf-pm"><option value="cash">Cash</option><option value="upi">UPI</option><option value="credit">Credit</option></select>
+      </div>
+      <div class="fld"><label>UPI ID (for QR code)</label><input id="sf-upi" placeholder="shopname@upi"></div>
+    </div>
+
+    <div class="sechead">Bank Details (for Invoice)</div>
+    <div class="g2">
+      <div class="fld"><label>Account Holder Name</label><input id="sf-bn" placeholder="As per bank records"></div>
+      <div class="fld"><label>Account Number</label><input id="sf-bac" placeholder="Bank account number"></div>
+    </div>
+    <div class="g2">
+      <div class="fld"><label>IFSC Code</label><input id="sf-bif" placeholder="e.g. SBIN0001234" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fld"><label>Bank & Branch</label><input id="sf-bbr" placeholder="e.g. SBI, MG Road"></div>
+    </div>
+
+    <div class="sechead">Invoice Defaults</div>
+    <div class="fld"><label>Default Terms / Footer Note</label>
+      <textarea id="sf-notes" rows="2" placeholder="e.g. Goods once sold will not be returned. Payment due within 7 days."></textarea>
+    </div>
+
+    <button class="btn bpri wfull mt14" onclick="saveFirm()">🚀 Start Using RetailFlow</button>
+  </div></div>`;
+}
+
+window.setSetupGST = v => { S._setupGST = v; render(); };
+
+window.saveFirm = () => {
+  const nm=$('sf-nm')?.value?.trim(), pr=$('sf-pr')?.value?.trim(), ad=$('sf-ad')?.value?.trim();
+  const gst = S._setupGST||false;
+  if(!nm||!pr||!ad){ alert('Please fill all required fields (*)'); return; }
+  if(gst){
+    const gstin=$('sf-gs')?.value?.trim(), st=$('sf-st')?.value;
+    if(!gstin||!st){ alert('GSTIN and State are required for GST registered businesses.'); return; }
+  }
+  S.firm = {
+    id:uid(), firm_name:nm, proprietor:pr, address:ad, phone:$('sf-ph')?.value?.trim()||'',
+    gst_registered:gst,
+    gstin: gst?($('sf-gs')?.value?.trim()||''):'',
+    state: gst?($('sf-st')?.value||''):'',
+    default_gst_rate: gst?Number($('sf-gr')?.value||18):0,
+    payment_method: $('sf-pm')?.value||'cash',
+    upi_id: $('sf-upi')?.value?.trim()||'',
+    bank_name: $('sf-bn')?.value?.trim()||'',
+    bank_acc: $('sf-bac')?.value?.trim()||'',
+    bank_ifsc: $('sf-bif')?.value?.trim()||'',
+    bank_branch: $('sf-bbr')?.value?.trim()||'',
+    default_notes: $('sf-notes')?.value?.trim()||'',
+  };
+  S.invForm = blankInv();
+  save(); render();
+};
+
+/* ══════════════════════════════════════════════════
+   TOPBAR
+══════════════════════════════════════════════════ */
+function renderTopbar() {
+  return `<div class="topbar">
+    <div class="row" style="gap:8px;min-width:0;overflow:hidden">
+      <div class="logo">Retail<b>Flow</b></div>
+      <div class="mtog">
+        <button class="mbtn${S.mode==='invoice'?' on':''}" onclick="swMode('invoice')">🧾 Invoice</button>
+        <button class="mbtn${S.mode==='business'?' on':''}" onclick="swMode('business')">💼 Business</button>
+        <button class="mbtn${S.mode==='gst'?' on':''}" onclick="swMode('gst')">📊 GST</button>
+        <button class="mbtn${S.mode==='inventory'?' on':''}" onclick="swMode('inventory')">📦 Stock</button>
+      </div>
+    </div>
+    <div class="tbr">
+      <button class="btn bgho bsm no-print" onclick="swPage('customers')">👥<span class="bcnt">${S.customers.length}</span></button>
+      <button class="btn bgho bsm no-print" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="editFirm()">⚙️ ${esc(S.firm.firm_name)}</button>
+      <button class="ibtn no-print" onclick="toggleDark()">${S.dark?'☀️':'🌙'}</button>
+    </div>
+  </div>`;
+}
+
+/* ── ROUTER ─────────────────────────────────────── */
+function renderMain() {
+  if(S.page==='customers') return renderCustomers();
+  if(S.mode==='gst')       return renderGST();
+  if(S.mode==='inventory') return renderInventoryMode();
+  if(S.mode==='invoice')   return renderInvoice();
+  return renderBusiness();
+}
+
+/* ══════════════════════════════════════════════════
+   INVOICE MODE
+══════════════════════════════════════════════════ */
+function renderInvoice() {
+  return `<div class="sh">
+    <div><div class="st">${S.firm.gst_registered?'Tax Invoices':'Bills of Supply'}</div>
+    <div class="sb">${S.firm.gst_registered?'GST 2.0 · CGST + SGST per item':'No GST charged · Bill of Supply format'}</div></div>
+    <button class="btn bpri no-print" onclick="newInv()">+ New ${S.firm.gst_registered?'Invoice':'Bill'}</button>
+  </div>
+  <div class="tabs">
+    <button class="tab${S.tab==='create'?' on':''}" onclick="swTab('create')">✏️ Create</button>
+    <button class="tab${S.tab==='list'?' on':''}" onclick="swTab('list')">📋 List (${S.invoices.length})</button>
+  </div>
+  ${S.tab==='create' ? renderInvCreate() : renderInvList()}`;
+}
+
+function renderInvCreate() {
+  const f = S.invForm;
+  const isReg = S.firm.gst_registered;
+  const isPar = f.is_partial === true;
+  const isCred = f.payment_method === 'credit';
+  const preview = buildInvTotals(f.items, isReg);
+  return `<div class="card">
+    <div class="ctitle">🧾 ${isReg?'New Tax Invoice':'New Bill of Supply'}</div>
+    <!-- Customer -->
+    <div class="g2">
+      <div class="fld"><label>Customer Name *</label>
+        <input id="ic-cn" placeholder="Type or select customer" value="${esc(f.customer_name)}" list="cust-ac">
+        <datalist id="cust-ac">${S.customers.map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist>
+      </div>
+      <div class="fld"><label>Phone (WhatsApp)</label>
+        <input id="ic-cp" placeholder="10-digit mobile" value="${esc(f.customer_phone)}" type="tel">
+      </div>
+    </div>
+    <!-- Date + Invoice No preview -->
+    <div class="g2">
+      <div class="fld"><label>Date</label><input id="ic-dt" type="date" value="${f.date}" onchange="onDateChange(this.value)"></div>
+      <div class="fld"><label>Invoice Number</label>
+        <input id="ic-ino" value="${esc(f._inv_no||getNextInvNo(f.date).no)}" readonly style="background:var(--gnb);color:var(--grn);font-weight:600;border-color:#b8dfc8">
+      </div>
+    </div>
+    <!-- Payment Method + Completion — TWO separate fields -->
+    <div class="g2">
+      <div class="fld">
+        <label>Payment Method <span class="fs10 tx2">— How does the customer pay?</span></label>
+        <div class="trow">
+          ${['cash','upi','credit','cheque'].map(m=>`<button class="tag${f.payment_method===m?' on':''}" onclick="setIPM('${m}')">${{cash:'💵 Cash',upi:'📱 UPI',credit:'📒 Credit',cheque:'🏦 Cheque'}[m]}</button>`).join('')}
+        </div>
+      </div>
+      <div class="fld">
+        <label>Payment Completion <span class="fs10 tx2">— Full amount or part?</span></label>
+        <div class="trow">
+          <button class="tag${!isPar?' on':''}" onclick="setIPartial(false)">✅ Full Payment</button>
+          <button class="tag${isPar?' on':''}" onclick="setIPartial(true)" style="${isPar?'':''}">⚠️ Partial</button>
+        </div>
+        ${f.payment_method==='credit'&&!isPar?`<div class="fs11 tx2 mt8">Credit = full amount due later. Use Partial if they pay some now.</div>`:''}
+      </div>
+    </div>
+    <!-- Partial amount fill bar — only when Partial is selected -->
+    ${isPar ? `<div class="paybar-wrap">
+      <div class="fs12 fw6 mb8">💳 Partial Payment Details</div>
+      <div class="g2">
+        <div class="fld" style="margin-bottom:0">
+          <label>Amount Paid Now ₹</label>
+          <input id="ic-pam" type="number" min="0" step="0.01" placeholder="0.00" value="${f.partial_amount||''}" oninput="updatePartialBar()" style="font-size:15px;font-weight:600">
+        </div>
+        <div style="padding-top:22px">
+          <div class="fs11 tx2">Balance Due</div>
+          <div class="fw6 txred" style="font-size:16px" id="par-bal">${fmt(Math.max(0,(preview.grandTotal||0)-(f.partial_amount||0)))}</div>
+        </div>
+      </div>
+      <div class="paybar-track mt8"><div class="paybar-fill" id="par-bar" style="width:${Math.min(100,preview.grandTotal>0?((f.partial_amount||0)/preview.grandTotal*100):0)}%"></div></div>
+      <div class="fs11 tx2 row jbet mt8">
+        <span>₹0</span>
+        <span id="par-pct" class="fw6" style="color:var(--grn)">${preview.grandTotal>0?Math.round(((f.partial_amount||0)/preview.grandTotal)*100):0}% paid</span>
+        <span>${fmt(preview.grandTotal)}</span>
+      </div>
+    </div>` : ''}
+    <!-- Due date — for credit or partial -->
+    ${(isCred||isPar) ? `<div class="fld mt8"><label>Due Date <span class="fs10 tx2">(when should balance be paid?)</span></label><input id="ic-due" type="date" value="${f.due_date||''}"></div>` : ''}
+    <hr>
+    <!-- Items table -->
+    <div class="fs13 fw6 mb8">Line Items ${isReg?'<span class="fs11 tx2">(GST rate per item)</span>':''}</div>
+    <div style="overflow-x:auto">
+    <table class="it">
+      <thead><tr>
+        <th style="min-width:180px">Description</th>
+        <th style="width:55px">Qty</th>
+        <th style="width:80px">Rate ₹</th>
+        <th style="width:60px">Disc %</th>
+        ${isReg?`<th style="width:65px">GST %</th><th style="width:80px">Taxable</th><th style="width:70px">GST</th>`:''}
+        <th style="width:90px">Total</th>
+        <th style="width:30px"></th>
+      </tr></thead>
+      <tbody id="itbody"></tbody>
+    </table>
+    </div>
+    <button class="btn bgho bsm mb14 mt8" onclick="addIItem()">+ Add Item</button>
+    <!-- Totals -->
+    <div id="totals-panel" style="background:var(--surf2);border-radius:10px;padding:14px">
+      ${isReg ? renderGSTSummaryPanel(preview,false) : `
+      <div class="row jbet fs12 mb8"><span class="tx2">Subtotal</span><span>${fmt(preview.subtotal)}</span></div>
+      ${preview.totalDisc>0?`<div class="row jbet fs12 mb8"><span class="tx2">Total Discount</span><span class="txred">−${fmt(preview.totalDisc)}</span></div>`:''}
+      <hr style="margin:8px 0">
+      <div class="row jbet" style="font-family:var(--ffd);font-size:18px"><span>Total</span><span class="txacc">${fmt(preview.grandTotal)}</span></div>`}
+    </div>
+    <!-- Notes -->
+    <div class="fld mt14"><label>Invoice Notes / Terms</label>
+      <textarea id="ic-notes" rows="2" placeholder="e.g. Goods once sold will not be returned.">${esc(f.notes||'')}</textarea>
+    </div>
+    <div class="row mt14" style="justify-content:flex-end;gap:8px">
+      <button class="btn bgho" onclick="clearInv()">Clear</button>
+      <button class="btn bpri" onclick="saveInvoice()">💾 Save ${isReg?'Invoice':'Bill'}</button>
+    </div>
+  </div>`;
+}
+
+function renderGSTSummaryPanel(t, isPrint) {
+  const rates = Object.keys(t.gstSummary).map(Number).sort();
+  const rowStyle = isPrint ? 'display:flex;justify-content:space-between;font-size:11px;padding:3px 0;' : '';
+  let html = `<div class="row jbet fs12 mb8"><span class="tx2">Subtotal</span><span>${fmt(t.subtotal)}</span></div>`;
+  if(t.totalDisc>0) html += `<div class="row jbet fs12 mb8"><span class="tx2">Total Discount</span><span class="txred">−${fmt(t.totalDisc)}</span></div>`;
+  html += `<hr style="margin:8px 0">`;
+  html += `<div class="fs11 fw6 tx2 mb8">GST BREAKUP</div>`;
+  html += `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:340px">
+    <thead><tr style="background:var(--surf2)"><th style="padding:4px 8px;text-align:left">Rate</th><th style="padding:4px 8px;text-align:right">Taxable</th><th style="padding:4px 8px;text-align:right">CGST</th><th style="padding:4px 8px;text-align:right">SGST</th><th style="padding:4px 8px;text-align:right">Total GST</th></tr></thead>
+    <tbody>${rates.map(r=>`<tr><td style="padding:4px 8px">${r}%</td><td style="padding:4px 8px;text-align:right">${fmt(t.gstSummary[r].taxable)}</td><td style="padding:4px 8px;text-align:right">${fmt(t.gstSummary[r].cgst)}</td><td style="padding:4px 8px;text-align:right">${fmt(t.gstSummary[r].sgst)}</td><td style="padding:4px 8px;text-align:right;font-weight:600">${fmt(t.gstSummary[r].gst)}</td></tr>`).join('')}
+    </tbody>
+  </table></div>`;
+  html += `<hr style="margin:8px 0">`;
+  html += `<div class="row jbet fs12 mb4"><span class="tx2">Total Taxable</span><span>${fmt(t.totalTaxable)}</span></div>`;
+  html += `<div class="row jbet fs12 mb8"><span class="tx2">Total GST (CGST+SGST)</span><span class="txred">${fmt(t.totalGST)}</span></div>`;
+  html += `<div class="row jbet" style="font-family:var(--ffd);font-size:18px"><span>Grand Total</span><span class="txacc">${fmt(t.grandTotal)}</span></div>`;
+  return html;
+}
+
+/* ── ITEM ROWS ──────────────────────────────────── */
+function renderItemRows() {
+  const tbody = $('itbody'); if(!tbody||!S.invForm) return;
+  const isReg = S.firm.gst_registered;
+  tbody.innerHTML = S.invForm.items.map(it => {
+    const c = calcItem(it, isReg);
+    return `<tr>
+      <td><input class="iinput" data-id="${it.id}" data-f="name" value="${esc(it.name)}" placeholder="Item description" list="inv-ac-${it.id}">
+        <datalist id="inv-ac-${it.id}">${S.inventory.map(i=>`<option value="${esc(i.name)}">`).join('')}</datalist></td>
+      <td><input class="iinput" data-id="${it.id}" data-f="qty" type="number" min="1" step="1" value="${it.qty}" style="width:52px"></td>
+      <td><input class="iinput" data-id="${it.id}" data-f="rate" type="number" min="0" step="0.01" value="${it.rate}" style="width:76px"></td>
+      <td><input class="iinput" data-id="${it.id}" data-f="discount" type="number" min="0" max="100" step="1" value="${it.discount||0}" style="width:55px"></td>
+      ${isReg?`<td><select class="iinput" data-id="${it.id}" data-f="gst_rate" style="width:62px">${GST_SLABS.map(r=>`<option value="${r}"${Number(it.gst_rate)===r?' selected':''}>${r}%</option>`).join('')}</select></td>
+        <td><input class="iinput ro" data-taxable="${it.id}" value="${fmt(c.taxable)}" readonly style="width:78px;font-size:11px"></td>
+        <td><input class="iinput ro" data-gstamt="${it.id}" value="${fmt(c.gstAmt)}" readonly style="width:66px;font-size:11px;color:var(--red)"></td>` : ''}
+      <td><input class="iinput ro" id="ia-${it.id}" value="${fmt(c.total)}" readonly style="width:86px;font-weight:600"></td>
+      <td><button class="btn bdng bsm" style="padding:2px 6px" onclick="remIItem('${it.id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+  // Attach listeners — NO full re-render on input, only update computed cells in-place
+  tbody.querySelectorAll('.iinput:not([readonly])').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const id=e.target.dataset.id, f=e.target.dataset.f;
+      const item=S.invForm.items.find(i=>i.id===id);
+      if(!item) return;
+      item[f] = e.target.value;
+      // Auto-fill rate + gst from inventory when name matches exactly
+      if(f==='name'){
+        const invItem = S.inventory.find(i=>i.name.toLowerCase()===e.target.value.toLowerCase());
+        if(invItem){
+          item.rate = invItem.rate;
+          item.gst_rate = invItem.gst_rate;
+          const ri=tbody.querySelector(`[data-id="${id}"][data-f="rate"]`);
+          const gi=tbody.querySelector(`[data-id="${id}"][data-f="gst_rate"]`);
+          if(ri) ri.value=invItem.rate;
+          if(gi) gi.value=invItem.gst_rate;
+        }
+      }
+      // Update only the computed readonly cells for this row — no full re-render
+      const isReg = S.firm.gst_registered;
+      const c = calcItem(item, isReg);
+      const rowTot = tbody.querySelector(`#ia-${id}`);
+      if(rowTot) rowTot.value = fmt(c.total);
+      if(isReg){
+        const taxEl = tbody.querySelector(`[data-taxable="${id}"]`);
+        const gstEl = tbody.querySelector(`[data-gstamt="${id}"]`);
+        if(taxEl) taxEl.value = fmt(c.taxable);
+        if(gstEl) gstEl.value = fmt(c.gstAmt);
+      }
+      // Update totals panel only
+      updateTotalsPanel();
+    });
+  });
+}
+
+function updateTotals() { updateTotalsPanel(); }
+
+function updateTotalsPanel() {
+  if(!S.invForm) return;
+  const isReg = S.firm.gst_registered;
+  const t = buildInvTotals(S.invForm.items, isReg);
+  const panel = $('totals-panel');
+  if(panel) {
+    if(isReg) {
+      panel.innerHTML = renderGSTSummaryPanel(t, false);
+    } else {
+      panel.innerHTML = `
+        <div class="row jbet fs12 mb8"><span class="tx2">Subtotal</span><span>${fmt(t.subtotal)}</span></div>
+        ${t.totalDisc>0?`<div class="row jbet fs12 mb8"><span class="tx2">Total Discount</span><span class="txred">−${fmt(t.totalDisc)}</span></div>`:''}
+        <hr style="margin:8px 0">
+        <div class="row jbet" style="font-family:var(--ffd);font-size:18px"><span>Total</span><span class="txacc">${fmt(t.grandTotal)}</span></div>`;
+    }
+  }
+  // Update partial bar if visible
+  const pam = Number($('ic-pam')?.value||0);
+  const bar = $('par-bar'), pct = $('par-pct'), bal = $('par-bal');
+  if(bar && t.grandTotal>0){
+    const p = Math.min(100,(pam/t.grandTotal)*100);
+    bar.style.width=p+'%';
+    if(pct) pct.textContent=Math.round(p)+'% paid';
+    if(bal) bal.textContent=fmt(Math.max(0,t.grandTotal-pam));
+  }
+}
+
+function updatePartialBar() {
+  updateTotals();
+  if(!S.invForm) return;
+  const isReg = S.firm.gst_registered;
+  const t = buildInvTotals(S.invForm.items, isReg);
+  const pam = Number($('ic-pam')?.value||0);
+  S.invForm.partial_amount = pam;
+  const pb=$('par-bar'),pp=$('par-pct'),bal=$('par-bal');
+  if(pb&&t.grandTotal>0){const pct=Math.min(100,(pam/t.grandTotal)*100);pb.style.width=pct+'%';if(pp)pp.textContent=Math.round(pct)+'% paid';if(bal)bal.textContent=fmt(Math.max(0,t.grandTotal-pam));}
+}
+
+function readInvInputs() {
+  if(!S.invForm) return;
+  S.invForm.customer_name  = $('ic-cn')?.value||'';
+  S.invForm.customer_phone = $('ic-cp')?.value||'';
+  S.invForm.date           = $('ic-dt')?.value||today();
+  S.invForm.due_date       = $('ic-due')?.value||'';
+  S.invForm.notes          = $('ic-notes')?.value||'';
+  S.invForm.partial_amount = Number($('ic-pam')?.value||0);
+}
+
+function attachCustAC() {
+  const inp = $('ic-cn'); if(!inp) return;
+  inp.addEventListener('change', () => {
+    const m = S.customers.find(c=>c.name.toLowerCase()===inp.value.toLowerCase());
+    if(m){ const ph=$('ic-cp'); if(ph&&!ph.value) ph.value=m.phone||''; }
+  });
+}
+
+window.onDateChange = v => { if(S.invForm){ S.invForm.date=v; const{no}=getNextInvNo(v); const el=$('ic-ino'); if(el)el.value=no; } };
+
+/* ── INVOICE LIST ───────────────────────────────── */
+function renderInvList() {
+  const allFYs = [...new Set(S.invoices.map(i=>i.fy).filter(Boolean))].sort().reverse();
+  let invs = S.invoices;
+  if(S.invFilter==='partial') invs = invs.filter(i=>i.is_partial||i.status==='partial');
+  else if(S.invFilter!=='all') invs = invs.filter(i=>i.payment_method===S.invFilter||i.status===S.invFilter);
+  return `
+  ${S.viewInv ? `<div class="card mb14">
+    <div class="row jbet mb14" style="flex-wrap:wrap;gap:8px">
+      <span class="txgrn fw6 fs13">✅ ${esc(S.viewInv.invoice_no)}</span>
+      <div class="row" style="gap:5px;flex-wrap:wrap">
+        <button class="btn bpri bsm" onclick="doPrint('${S.viewInv.id}')">🖨️ Print/PDF</button>
+        <button class="btn bwa bsm" onclick="openWAInv('${S.viewInv.id}')">💬 WhatsApp</button>
+        <button class="btn bgho bsm" onclick="openThermal('${S.viewInv.id}')">🧾 Receipt</button>
+        <button class="btn bblu bsm" onclick="duplicateInv('${S.viewInv.id}')">📋 Duplicate</button>
+        <button class="btn bgho bsm" onclick="dismissV()">Dismiss</button>
+      </div>
+    </div>
+    ${invPreviewHTML(S.viewInv)}
+  </div>` : ''}
+  <div class="frow">
+    ${['all','cash','upi','credit','partial','paid','unpaid'].map(f=>`<button class="fbtn${S.invFilter===f?' on':''}" onclick="setIF('${f}')">${f.charAt(0).toUpperCase()+f.slice(1)}</button>`).join('')}
+  </div>
+  ${invs.length===0 ? `<div class="empty"><div class="eico">🧾</div><div class="etit">No invoices yet</div></div>`
+  : `<div class="twrap"><table>
+    <thead><tr><th>Invoice #</th><th>FY</th><th>Customer</th><th>Date</th><th>Payment</th><th>Status</th><th>Total</th><th>Actions</th></tr></thead>
+    <tbody>${invs.map(inv=>`<tr>
+      <td class="txacc fw6" style="cursor:pointer;white-space:nowrap" onclick="viewI('${inv.id}')">${esc(inv.invoice_no)}</td>
+      <td class="tx2 fs11">${inv.fy||'—'}</td>
+      <td>${esc(inv.customer_name||'—')}</td>
+      <td class="tx2 fs11">${fmtDate(inv.date)}</td>
+      <td><span class="bdg ${pb(inv.payment_method)}">${inv.payment_method.toUpperCase()}</span></td>
+      <td><span class="bdg ${pb(inv.status||'paid')}">${(inv.status||'paid').toUpperCase()}</span></td>
+      <td class="fw6">${fmt(inv.total)}</td>
+      <td><div class="row" style="gap:3px">
+        <button class="btn bpri bsm" onclick="doPrint('${inv.id}')">🖨️</button>
+        <button class="btn bwa bsm" onclick="openWAInv('${inv.id}')">💬</button>
+        <button class="btn bgho bsm" onclick="openThermal('${inv.id}')">🧾</button>
+        <button class="btn bblu bsm" onclick="duplicateInv('${inv.id}')">📋</button>
+        <button class="btn bdng bsm" onclick="delInv('${inv.id}')">🗑️</button>
+      </div></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`}`;
+}
+
+function invPreviewHTML(inv) {
+  const f = S.firm;
+  const isReg = f.gst_registered;
+  const t = buildInvTotals(inv.items||[], isReg);
+  return `<div style="background:#fff;color:#1C1915;border:1.5px solid #DDD8CF;border-radius:12px;padding:20px;font-family:'Sora',sans-serif">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div><div style="font-family:'Playfair Display',serif;font-size:20px;color:#BF4A2B">${esc(f.firm_name)}</div>
+      <div style="font-size:11px;color:#7A746C;margin-top:2px;line-height:1.65">Prop: ${esc(f.proprietor)}<br>${esc(f.address)}${f.gstin?`<br>GSTIN: ${esc(f.gstin)}`:''}${f.phone?`<br>📞 ${esc(f.phone)}`:''}</div></div>
+      <div style="text-align:right">
+        <div style="font-size:10px;font-weight:700;color:#7A746C;text-transform:uppercase">${isReg?'TAX INVOICE':'BILL OF SUPPLY'}</div>
+        <div style="font-weight:700;font-size:14px;margin-top:2px">${esc(inv.invoice_no)}</div>
+        <div style="font-size:11px;color:#7A746C">${fmtDate(inv.date)}</div>
+        ${inv.due_date?`<div style="font-size:11px;color:#BF4A2B">Due: ${fmtDate(inv.due_date)}</div>`:''}
+      </div>
+    </div>
+    <div style="background:#F6F3EE;border-radius:8px;padding:9px 13px;margin-bottom:13px">
+      <div style="font-size:10px;font-weight:600;color:#7A746C;text-transform:uppercase;margin-bottom:2px">Bill To</div>
+      <div style="font-weight:600;font-size:13px">${esc(inv.customer_name||'Walk-in')}</div>
+      ${inv.customer_phone?`<div style="font-size:11px;color:#7A746C">📞 ${esc(inv.customer_phone)}</div>`:''}
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:#BF4A2B">${['#','Item','Qty','Rate','Disc%',isReg?'GST%':'','Taxable',isReg?'GST':'','Total'].filter(Boolean).map(h=>`<th style="padding:5px 8px;text-align:left;color:#fff;font-size:10px">${h}</th>`).join('')}</tr></thead>
+      <tbody>${(inv.items||[]).map((it,i)=>{const c=calcItem(it,isReg);return`<tr style="background:${i%2===0?'#fff':'#FAF8F5'}">
+        <td style="padding:5px 8px;color:#7A746C">${i+1}</td>
+        <td style="padding:5px 8px">${esc(it.name)}</td>
+        <td style="padding:5px 8px">${it.qty}</td>
+        <td style="padding:5px 8px">${fmt(it.rate)}</td>
+        <td style="padding:5px 8px">${it.discount||0}%</td>
+        ${isReg?`<td style="padding:5px 8px">${it.gst_rate||0}%</td>`:''}
+        <td style="padding:5px 8px">${fmt(c.taxable)}</td>
+        ${isReg?`<td style="padding:5px 8px;color:#BF4A2B">${fmt(c.gstAmt)}</td>`:''}
+        <td style="padding:5px 8px;font-weight:600">${fmt(c.total)}</td>
+      </tr>`;}).join('')}</tbody>
+    </table>
+    ${isReg ? `<div style="margin-top:12px;padding:10px;background:#F6F3EE;border-radius:8px;font-size:11px">
+      <table style="width:100%;border-collapse:collapse">
+        <tr style="font-size:10px;color:#7A746C"><th style="text-align:left">Rate</th><th style="text-align:right">Taxable</th><th style="text-align:right">CGST</th><th style="text-align:right">SGST</th><th style="text-align:right">Total GST</th></tr>
+        ${Object.entries(t.gstSummary).sort((a,b)=>Number(a[0])-Number(b[0])).map(([r,d])=>`<tr><td>${r}%</td><td style="text-align:right">${fmt(d.taxable)}</td><td style="text-align:right">${fmt(d.cgst)}</td><td style="text-align:right">${fmt(d.sgst)}</td><td style="text-align:right;font-weight:600">${fmt(d.gst)}</td></tr>`).join('')}
+      </table>
+    </div>` : ''}
+    <div style="display:flex;flex-direction:column;align-items:flex-end;margin-top:10px;gap:3px;font-size:11px;color:#7A746C">
+      ${t.totalDisc>0?`<div>Discount: −${fmt(t.totalDisc)}</div>`:''}
+      ${isReg?`<div>Total GST: ${fmt(t.totalGST)}</div>`:''}
+      <div style="background:#BF4A2B;color:#fff;padding:7px 14px;border-radius:8px;font-family:'Playfair Display',serif;font-size:15px;margin-top:4px">${isReg?'Grand Total':'Total'}: ${fmt(inv.total)}</div>
+    </div>
+    ${inv.is_partial?`<div style="font-size:11px;color:#BF4A2B;margin-top:6px">Paid: ${fmt(inv.partial_amount)} · Balance: ${fmt(inv.total-(inv.partial_amount||0))}</div>`:''}
+    ${inv.notes?`<div style="margin-top:10px;font-size:10px;color:#7A746C;border-top:1px solid #DDD8CF;padding-top:8px">${esc(inv.notes)}</div>`:''}
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════
+   PRINT / PDF  (with UPI QR code)
+══════════════════════════════════════════════════ */
+function generateQR(text) {
+  return new Promise(resolve => {
+    if(!text || !window.QRCode){ resolve(''); return; }
+    const div = document.createElement('div');
+    div.style.cssText = 'position:absolute;left:-9999px;top:-9999px';
+    document.body.appendChild(div);
+    try {
+      new QRCode(div, { text, width:150, height:150, correctLevel:QRCode.CorrectLevel.M });
+      setTimeout(() => {
+        const canvas = div.querySelector('canvas');
+        const url = canvas ? canvas.toDataURL('image/png') : '';
+        document.body.removeChild(div);
+        resolve(url);
+      }, 250);
+    } catch(e){ if(document.body.contains(div)) document.body.removeChild(div); resolve(''); }
+  });
+}
+
+async function doPrint(id) {
+  const inv = S.invoices.find(i=>i.id===id); if(!inv) return;
+  const f = S.firm;
+  const isReg = f.gst_registered;
+  const t = buildInvTotals(inv.items||[], isReg);
+  let qrURL = '';
+  if(f.upi_id) {
+    const upiStr = `upi://pay?pa=${encodeURIComponent(f.upi_id)}&pn=${encodeURIComponent(f.firm_name)}&am=${inv.total}&cu=INR&tn=${encodeURIComponent(inv.invoice_no)}`;
+    qrURL = await generateQR(upiStr);
+  }
+  const w = window.open('','_blank');
+  if(!w) return;
+  w.document.write(printHTML(inv, f, t, isReg, qrURL));
+  w.document.close();
+}
+
+function printHTML(inv, f, t, isReg, qrURL) {
+  const hasBank = f.bank_acc && f.bank_ifsc;
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Sora:wght@400;500;600&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Sora',sans-serif;padding:28px;color:#1C1915;max-width:700px;margin:0 auto}
+    .hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid #BF4A2B}
+    .fn{font-family:'Playfair Display',serif;font-size:22px;color:#BF4A2B}
+    .ms{font-size:11px;color:#7A746C;margin-top:3px;line-height:1.65}
+    .inv-label{font-size:10px;font-weight:700;color:#7A746C;text-transform:uppercase;letter-spacing:.5px;text-align:right}
+    .inv-no{font-size:16px;font-weight:700;text-align:right;margin-top:2px}
+    .inv-dt{font-size:11px;color:#7A746C;text-align:right}
+    .bt{background:#F6F3EE;border-radius:8px;padding:9px 12px;margin-bottom:13px}
+    .bl{font-size:9px;font-weight:700;color:#7A746C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+    table{width:100%;border-collapse:collapse;margin-bottom:10px}
+    th{background:#BF4A2B;color:#fff;padding:5px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase}
+    td{padding:5px 8px;font-size:11px;border-bottom:1px solid #EDE9E2}
+    tr:nth-child(even) td{background:#FAF8F5}
+    .gst-tbl th{background:#F6F3EE;color:#7A746C;padding:4px 8px}
+    .gst-tbl td{padding:4px 8px;font-size:10px}
+    .totals{display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:11px;color:#7A746C}
+    .grand{background:#BF4A2B;color:#fff;padding:6px 14px;border-radius:8px;font-family:'Playfair Display',serif;font-size:14px;margin-top:4px}
+    .footer-section{display:flex;justify-content:space-between;margin-top:20px;padding-top:14px;border-top:1px solid #EDE9E2;gap:14px;flex-wrap:wrap}
+    .bank-box{font-size:10px;color:#7A746C;line-height:1.8}
+    .bank-box b{color:#1C1915;font-size:11px}
+    .qr-box{text-align:center}
+    .qr-box img{width:100px;height:100px}
+    .qr-box div{font-size:9px;color:#7A746C;margin-top:3px}
+    .fo{text-align:center;margin-top:16px;font-size:10px;color:#7A746C;border-top:1px solid #EDE9E2;padding-top:10px}
+    .partial-notice{background:#FBF4E4;border:1px solid #e8d09a;border-radius:6px;padding:6px 10px;font-size:11px;color:#9A6D1E;margin-top:8px}
+    @media print{body{padding:10px}}
+  </style></head><body>
+  <div class="hd">
+    <div><div class="fn">${esc(f.firm_name)}</div>
+    <div class="ms">Prop: ${esc(f.proprietor)}<br>${esc(f.address)}
+    ${f.gstin?`<br>GSTIN: ${esc(f.gstin)}`:''}${f.phone?`<br>📞 ${esc(f.phone)}`:''}</div></div>
+    <div>
+      <div class="inv-label">${isReg?'TAX INVOICE':'BILL OF SUPPLY'}</div>
+      <div class="inv-no">${esc(inv.invoice_no)}</div>
+      <div class="inv-dt">Date: ${fmtDate(inv.date)}</div>
+      ${inv.due_date?`<div class="inv-dt" style="color:#BF4A2B">Due: ${fmtDate(inv.due_date)}</div>`:''}
+      ${f.state?`<div class="inv-dt">State: ${esc(f.state)}</div>`:''}
+    </div>
+  </div>
+  <div class="bt"><div class="bl">Bill To</div>
+  <div style="font-weight:600;font-size:13px">${esc(inv.customer_name||'Walk-in')}</div>
+  ${inv.customer_phone?`<div style="font-size:11px;color:#7A746C">📞 ${esc(inv.customer_phone)}</div>`:''}</div>
+  <table><thead><tr><th>#</th><th>Description</th><th>Qty</th><th>Rate</th><th>Disc%</th>${isReg?'<th>GST%</th><th>Taxable</th><th>CGST</th><th>SGST</th>':''}<th>Total</th></tr></thead>
+  <tbody>${(inv.items||[]).map((it,i)=>{const c=calcItem(it,isReg);return`<tr><td>${i+1}</td><td>${esc(it.name)}</td><td>${it.qty}</td><td>${fmt(it.rate)}</td><td>${it.discount||0}%</td>${isReg?`<td>${it.gst_rate}%</td><td>${fmt(c.taxable)}</td><td>${fmt(c.cgst)}</td><td>${fmt(c.sgst)}</td>`:''}<td>${fmt(c.total)}</td></tr>`;}).join('')}</tbody></table>
+  ${isReg?`<table class="gst-tbl" style="max-width:400px;margin-left:auto">
+    <thead><tr><th>Rate</th><th>Taxable</th><th>CGST</th><th>SGST</th><th>Total GST</th></tr></thead>
+    <tbody>${Object.entries(t.gstSummary).sort((a,b)=>Number(a[0])-Number(b[0])).map(([r,d])=>`<tr><td>${r}%</td><td style="text-align:right">${fmt(d.taxable)}</td><td style="text-align:right">${fmt(d.cgst)}</td><td style="text-align:right">${fmt(d.sgst)}</td><td style="text-align:right;font-weight:700">${fmt(d.gst)}</td></tr>`).join('')}</tbody>
+  </table>`:''}
+  <div class="totals">
+    ${t.totalDisc>0?`<div>Discount: −${fmt(t.totalDisc)}</div>`:''}
+    ${isReg?`<div>Total GST: ${fmt(t.totalGST)}</div>`:''}
+    <div class="grand">${isReg?'Grand Total':'Total'}: ${fmt(inv.total)}</div>
+  </div>
+  ${inv.is_partial?`<div class="partial-notice">⚠️ Partial Payment — Paid: ${fmt(inv.partial_amount)} · Balance Due: ${fmt(inv.total-(inv.partial_amount||0))}</div>`:''}
+  <div class="footer-section">
+    ${hasBank?`<div class="bank-box"><b>Bank Details</b><br>
+      Account: ${esc(f.bank_acc)}<br>
+      IFSC: ${esc(f.bank_ifsc)}<br>
+      Name: ${esc(f.bank_name)}<br>
+      ${f.bank_branch?`Bank: ${esc(f.bank_branch)}`:''}
+    </div>`:''}
+    ${qrURL?`<div class="qr-box"><img src="${qrURL}" alt="UPI QR"><div>Scan to Pay via UPI<br><b>${esc(f.upi_id)}</b></div></div>`:''}
+  </div>
+  ${inv.notes?`<div style="margin-top:12px;font-size:10px;color:#7A746C;border-top:1px dashed #DDD8CF;padding-top:8px">${esc(inv.notes)}</div>`:''}
+  <div class="fo">Thank you for your business! 🙏 — ${esc(f.firm_name)}</div>
+  <script>window.onload=()=>{window.print()}<\/script>
+  </body></html>`;
+}
+
+/* ══════════════════════════════════════════════════
+   THERMAL RECEIPT
+══════════════════════════════════════════════════ */
+window.openThermal = id => { S.thermalInv = S.invoices.find(i=>i.id===id)||null; render(); };
+window.closeThermal = () => { S.thermalInv=null; render(); };
+
+function renderThermalModal() {
+  const inv = S.thermalInv; const f = S.firm;
+  const isReg = f.gst_registered;
+  return `<div class="mover" onclick="closeThermal()">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:340px">
+      <div class="row jbet mb14">
+        <div class="mtit">🧾 Thermal Receipt</div>
+        <button class="btn bpri bsm" onclick="printThermal('${inv.id}')">🖨️ Print</button>
+      </div>
+      <div class="thermal-preview">
+        <div class="thr-center" style="font-weight:700;font-size:13px">${esc(f.firm_name)}</div>
+        <div class="thr-center" style="font-size:9px">${esc(f.address)}</div>
+        ${f.gstin?`<div class="thr-center" style="font-size:9px">GSTIN: ${esc(f.gstin)}</div>`:''}
+        <div class="thr-line"></div>
+        <div class="thr-row"><span>${isReg?'TAX INVOICE':'BILL'}</span><span>${esc(inv.invoice_no)}</span></div>
+        <div class="thr-row"><span>Date</span><span>${fmtDate(inv.date)}</span></div>
+        <div class="thr-row"><span>Customer</span><span>${esc(inv.customer_name||'Walk-in')}</span></div>
+        <div class="thr-line"></div>
+        ${inv.items.map(it=>{const c=calcItem(it,isReg);return`<div style="font-size:10px">${esc(it.name)}</div>
+          <div class="thr-row" style="font-size:10px"><span>${it.qty}×${fmt(it.rate)}${it.discount?` -${it.discount}%`:''}${isReg?` +${it.gst_rate}%gst`:''}</span><span>${fmt(c.total)}</span></div>`;}).join('')}
+        <div class="thr-line"></div>
+        ${isReg?`<div class="thr-row"><span>GST</span><span>${fmt(buildInvTotals(inv.items,true).totalGST)}</span></div>`:''}
+        <div class="thr-row" style="font-weight:700;font-size:13px"><span>TOTAL</span><span>${fmt(inv.total)}</span></div>
+        ${inv.is_partial?`<div class="thr-row" style="font-size:10px;color:#BF4A2B"><span>Paid</span><span>${fmt(inv.partial_amount)}</span></div><div class="thr-row" style="font-size:10px;color:#BF4A2B"><span>Balance</span><span>${fmt(inv.total-(inv.partial_amount||0))}</span></div>`:''}
+        <div class="thr-row"><span>Payment</span><span>${inv.payment_method.toUpperCase()}</span></div>
+        ${f.upi_id?`<div class="thr-line"></div><div class="thr-center" style="font-size:10px">UPI: ${esc(f.upi_id)}</div>`:''}
+        <div class="thr-line"></div>
+        <div class="thr-center" style="font-size:10px">Thank you! Come again 🙏</div>
+      </div>
+      <button class="btn bpri wfull mt14" onclick="printThermal('${inv.id}')">🖨️ Print Thermal Receipt</button>
+      <div class="tx2 fs11 mt8" style="text-align:center">Works with 58mm & 80mm thermal printers</div>
+    </div>
+  </div>`;
+}
+
+window.printThermal = async id => {
+  const inv = S.invoices.find(i=>i.id===id); if(!inv) return;
+  const f = S.firm; const isReg = f.gst_registered;
+  let qrURL = '';
+  if(f.upi_id){ const ustr=`upi://pay?pa=${encodeURIComponent(f.upi_id)}&pn=${encodeURIComponent(f.firm_name)}&am=${inv.total}&cu=INR`; qrURL=await generateQR(ustr); }
+  const w = window.open('','_blank'); if(!w) return;
+  const t = buildInvTotals(inv.items||[], isReg);
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;font-size:12px;color:#000;width:76mm;padding:4mm;background:#fff}
+  .c{text-align:center}.b{font-weight:700}.hr{border-top:1px dashed #000;margin:4px 0}.r{display:flex;justify-content:space-between;margin:2px 0;font-size:11px}
+  @media print{@page{size:80mm auto;margin:0}body{width:80mm}}</style></head><body>
+  <div class="c b" style="font-size:14px">${esc(f.firm_name)}</div>
+  <div class="c" style="font-size:9px">${esc(f.address)}</div>
+  ${f.gstin?`<div class="c" style="font-size:9px">GSTIN: ${esc(f.gstin)}</div>`:''}
+  <div class="hr"></div>
+  <div class="r b"><span>${isReg?'TAX INVOICE':'BILL OF SUPPLY'}</span><span>${esc(inv.invoice_no)}</span></div>
+  <div class="r"><span>Date</span><span>${fmtDate(inv.date)}</span></div>
+  <div class="r"><span>Customer</span><span>${esc(inv.customer_name||'Walk-in')}</span></div>
+  ${inv.due_date?`<div class="r" style="color:red"><span>Due Date</span><span>${fmtDate(inv.due_date)}</span></div>`:''}
+  <div class="hr"></div>
+  ${inv.items.map(it=>{const c=calcItem(it,isReg);return`<div style="font-size:11px">${esc(it.name)}</div>
+    <div class="r" style="font-size:11px"><span>${it.qty}×${fmt(it.rate)}${it.discount?` -${it.discount}%`:''}${isReg?` GST${it.gst_rate}%`:''}</span><span>${fmt(c.total)}</span></div>`;}).join('')}
+  <div class="hr"></div>
+  ${t.totalDisc>0?`<div class="r"><span>Discount</span><span>-${fmt(t.totalDisc)}</span></div>`:''}
+  ${isReg?`<div class="r"><span>GST</span><span>${fmt(t.totalGST)}</span></div>`:''}
+  <div class="r b" style="font-size:13px"><span>TOTAL</span><span>${fmt(inv.total)}</span></div>
+  ${inv.is_partial?`<div class="r" style="font-size:10px"><span>Paid Now</span><span>${fmt(inv.partial_amount)}</span></div><div class="r" style="font-size:10px"><span>Balance Due</span><span>${fmt(inv.total-(inv.partial_amount||0))}</span></div>`:''}
+  <div class="r"><span>Payment</span><span>${inv.payment_method.toUpperCase()}</span></div>
+  ${qrURL?`<div class="hr"></div><div class="c"><img src="${qrURL}" style="width:80px;height:80px"><div style="font-size:9px">Scan to Pay UPI<br>${esc(f.upi_id)}</div></div>`:''}
+  ${f.bank_acc?`<div class="hr"></div><div style="font-size:9px">Bank: ${esc(f.bank_acc)} | IFSC: ${esc(f.bank_ifsc)}</div>`:''}
+  <div class="hr"></div>
+  <div class="c" style="font-size:10px">Thank you! Come again 🙏</div>
+  <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),1000)}<\/script>
+  </body></html>`);
+  w.document.close();
+};
+
+/* ══════════════════════════════════════════════════
+   WHATSAPP INVOICE SHARING
+══════════════════════════════════════════════════ */
+window.openWAInv = id => { S.waInv = S.invoices.find(i=>i.id===id)||null; render(); };
+window.closeWAInv = () => { S.waInv=null; render(); };
+
+function buildWAMsg(inv) {
+  const f = S.firm; const isReg = f.gst_registered;
+  const t = buildInvTotals(inv.items||[], isReg);
+  const lines = inv.items.map(it=>{const c=calcItem(it,isReg);return`  • ${it.name} — ${it.qty}×${fmt(it.rate)}${it.discount?` -${it.discount}%`:''}${isReg?` (+${it.gst_rate}% GST)`:''} = *${fmt(c.total)}*`;}).join('\n');
+  return `🧾 *${isReg?'Tax Invoice':'Bill of Supply'} from ${f.firm_name}*\n`+
+    `━━━━━━━━━━━━━━━━━\n`+
+    `Invoice: *${inv.invoice_no}*\nDate: ${fmtDate(inv.date)}\n`+
+    `${inv.due_date?`Due Date: ${fmtDate(inv.due_date)}\n`:''}`+
+    `━━━━━━━━━━━━━━━━━\n*Items:*\n${lines}\n`+
+    `━━━━━━━━━━━━━━━━━\n`+
+    `${t.totalDisc>0?`Discount: −${fmt(t.totalDisc)}\n`:''}`+
+    `${isReg?`Total GST: ${fmt(t.totalGST)}\n`:''}`+
+    `*${isReg?'Grand Total':'Total'}: ${fmt(inv.total)}*\n`+
+    `${inv.is_partial?`Paid Now: ${fmt(inv.partial_amount)} | Balance: ${fmt(inv.total-(inv.partial_amount||0))}\n`:''}`+
+    `Payment: ${inv.payment_method.toUpperCase()}\n`+
+    `${f.upi_id?`UPI: ${f.upi_id}\n`:''}`+
+    `━━━━━━━━━━━━━━━━━\n_Thank you! 🙏 — ${f.firm_name}_`;
+}
+
+function renderWAInvModal() {
+  const inv = S.waInv; if(!inv) return '';
+  const msg = buildWAMsg(inv);
+  return `<div class="mover" onclick="closeWAInv()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="row jbet mb14"><div class="mtit">💬 Share Invoice — WhatsApp</div><button class="ibtn" onclick="closeWAInv()">✕</button></div>
+      <div class="rmtxt">${esc(msg)}</div>
+      <div class="fld mt14"><label>Send to</label><input id="wa-ph" placeholder="10-digit mobile" value="${esc(inv.customer_phone||'')}"></div>
+      <div class="row mt8" style="gap:8px">
+        <button class="btn bwa wfull" onclick="sendWAInv('${inv.id}')">💬 Open WhatsApp</button>
+        <button class="btn bgho wfull" onclick="copyWAMsg('${inv.id}')">📋 Copy Message</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+window.sendWAInv = id => {
+  const inv = S.invoices.find(i=>i.id===id); if(!inv) return;
+  const ph = ($('wa-ph')?.value||inv.customer_phone||'').replace(/\D/g,'');
+  if(!ph){ alert('Enter phone number'); return; }
+  const num = ph.startsWith('91')?ph:'91'+ph;
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(buildWAMsg(inv))}`,'_blank');
+};
+window.copyWAMsg = id => {
+  const inv = S.invoices.find(i=>i.id===id); if(!inv) return;
+  navigator.clipboard.writeText(buildWAMsg(inv)).then(()=>alert('Copied!')).catch(()=>{});
+};
+
+/* ══════════════════════════════════════════════════
+   BUSINESS MODE
+══════════════════════════════════════════════════ */
+function renderBusiness() {
+  const tS=S.sales.reduce((a,i)=>a+Number(i.amount),0);
+  const tP=S.purchases.reduce((a,i)=>a+Number(i.amount),0);
+  const tE=S.expenses.reduce((a,i)=>a+Number(i.amount),0);
+  const cC=S.customers.filter(c=>Number(c.outstanding)>0);
+  const tC=cC.reduce((a,c)=>a+Number(c.outstanding),0);
+  const tPay=S.payments.reduce((a,p)=>a+Number(p.amount),0);
+  return `<div class="sh"><div><div class="st">Business Manager</div><div class="sb">Purchases · Sales · Expenses · Credit · Payments</div></div>
+    <button class="btn bgho bsm" onclick="exportAll()">⬇️ Export CSV</button>
+  </div>
+  <div class="g5 mb14">
+    <div class="sc"><div class="sl">Total Sales</div><div class="sv txacc">${fmt(tS)}</div><div class="ss">${S.sales.length} entries</div></div>
+    <div class="sc"><div class="sl">Purchases</div><div class="sv">${fmt(tP)}</div><div class="ss">${S.purchases.length} entries</div></div>
+    <div class="sc"><div class="sl">Expenses</div><div class="sv txred">${fmt(tE)}</div><div class="ss">${S.expenses.length} entries</div></div>
+    <div class="sc"><div class="sl">Credit Due</div><div class="sv txred">${fmt(tC)}</div><div class="ss">${cC.length} customers</div></div>
+    <div class="sc"><div class="sl">Collected</div><div class="sv txgrn">${fmt(tPay)}</div><div class="ss">${S.payments.length} payments</div></div>
+  </div>
+  <div class="tabs">
+    ${[['dash','📊 Dashboard'],['purchases',`📦 Purchases (${S.purchases.length})`],['sales',`💰 Sales (${S.sales.length})`],['expenses',`💸 Expenses (${S.expenses.length})`],['credit',`🔔 Credit (${cC.length})`],['payments',`💳 Payments (${S.payments.length})`]].map(([k,v])=>`<button class="tab${S.bizTab===k?' on':''}" onclick="swBiz('${k}')">${v}</button>`).join('')}
+  </div>
+  ${({dash:()=>renderDash(tS,tP,tE),purchases:renderPurch,sales:renderSalesTab,expenses:renderExpenses,credit:()=>renderCredit(cC,tC),payments:renderPayments}[S.bizTab]||(() => renderDash(tS,tP,tE)))()}`;}
+
+function renderDash(tS,tP,tE){
+  const profit=tS-tP-tE;
+  const thisM=today().slice(0,7);
+  const mInvs=S.invoices.filter(i=>i.date?.startsWith(thisM));
+  const mAmt=mInvs.reduce((a,i)=>a+Number(i.total),0);
+  return `<div class="g2 mb14">
+    <div class="sc" style="border-color:${profit>=0?'var(--grn)':'var(--red)'}">
+      <div class="sl">Net Profit</div>
+      <div class="sv" style="color:${profit>=0?'var(--grn)':'var(--red)'}">${fmt(profit)}</div>
+      <div class="ss">Sales − Purchases − Expenses</div>
+    </div>
+    <div class="sc"><div class="sl">This Month Invoices</div>
+      <div class="sv txacc">${fmt(mAmt)}</div>
+      <div class="ss">${mInvs.length} invoices · ${monthLabel(thisM+'-01')}</div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ctitle">📦 Recent Purchases</div>
+      ${S.purchases.slice(0,5).length===0?`<div class="empty" style="padding:20px 0"><div class="eico">📦</div><div class="etit">None yet</div></div>`:
+        S.purchases.slice(0,5).map(p=>`<div class="row jbet" style="padding:7px 0;border-bottom:1px solid var(--bor)">
+          <div><div class="fw6 fs13">${esc(p.supplier)}</div><div class="tx2 fs11">${esc(p.item||'—')} · ${fmtDate(p.date)}</div></div>
+          <div style="text-align:right"><div class="fw6">${fmt(p.amount)}</div><span class="bdg ${pb(p.status)}">${p.status.toUpperCase()}</span></div>
+        </div>`).join('')}
+    </div>
+    <div class="card"><div class="ctitle">💸 Recent Expenses</div>
+      ${S.expenses.slice(0,5).length===0?`<div class="empty" style="padding:20px 0"><div class="eico">💸</div><div class="etit">None yet</div></div>`:
+        S.expenses.slice(0,5).map(e=>`<div class="row jbet" style="padding:7px 0;border-bottom:1px solid var(--bor)">
+          <div><div class="fw6 fs13">${esc(e.category)}</div><div class="tx2 fs11">${esc(e.description||'—')} · ${fmtDate(e.date)}</div></div>
+          <div class="fw6 txred">${fmt(e.amount)}</div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+/* ── PURCHASES ──────────────────────────────────── */
+function renderPurch(){
+  const pf=S.pForm;
+  return `<div class="card mb14">
+    <div class="ctitle">+ Add Purchase Entry</div>
+    <div class="g2">
+      <div class="fld"><label>Supplier *</label><input id="p-sp" value="${esc(pf.supplier)}" placeholder="Supplier / Vendor"></div>
+      <div class="fld"><label>Item / Goods</label><input id="p-it" value="${esc(pf.item)}" placeholder="Description"></div>
+    </div>
+    <div class="g3">
+      <div class="fld"><label>Amount (₹) *</label><input id="p-am" type="number" value="${esc(pf.amount)}" placeholder="0"></div>
+      <div class="fld"><label>Date</label><input id="p-dt" type="date" value="${pf.date}"></div>
+      <div class="fld"><label>Status</label>
+        <div class="trow">${['paid','credit','cheque'].map(m=>`<button class="tag${pf.status===m?' on':''}" onclick="setPSt('${m}')">${m.charAt(0).toUpperCase()+m.slice(1)}</button>`).join('')}</div>
+      </div>
+    </div>
+    <div class="row" style="gap:8px">
+      <button class="btn bpri" onclick="savePurch()">Add Purchase</button>
+      <button class="btn bgho bsm" onclick="exportCSV('purchases')">⬇️ Export CSV</button>
+    </div>
+  </div>
+  ${S.purchases.length===0?`<div class="empty"><div class="eico">📦</div><div class="etit">No purchase entries yet</div></div>`
+  :`<div class="twrap"><table><thead><tr><th>Supplier</th><th>Item</th><th>Date</th><th>FY</th><th>Status</th><th>Amount</th><th></th></tr></thead>
+    <tbody>${S.purchases.map(p=>`<tr>
+      <td class="fw6">${esc(p.supplier)}</td><td class="tx2">${esc(p.item||'—')}</td>
+      <td class="tx2 fs11">${fmtDate(p.date)}</td>
+      <td class="tx2 fs11">${p.fy||'—'}</td>
+      <td><span class="bdg ${pb(p.status)}">${p.status.toUpperCase()}</span></td>
+      <td class="fw6">${fmt(p.amount)}</td>
+      <td><button class="btn bdng bsm" onclick="delP('${p.id}')">🗑️</button></td>
+    </tr>`).join('')}</tbody></table></div>`}`;
+}
+
+/* ── SALES ──────────────────────────────────────── */
+function renderSalesTab(){
+  const sf=S.sForm;
+  return `<div class="card mb14">
+    <div class="ctitle">+ Log Sale</div>
+    <div class="g2">
+      <div class="fld"><label>Customer *</label><input id="s-cu" value="${esc(sf.customer)}" placeholder="Customer name" list="scust-ac">
+        <datalist id="scust-ac">${S.customers.map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist>
+      </div>
+      <div class="fld"><label>Amount (₹) *</label><input id="s-am" type="number" value="${esc(sf.amount)}" placeholder="0"></div>
+    </div>
+    <div class="g2">
+      <div class="fld"><label>Date</label><input id="s-dt" type="date" value="${sf.date}"></div>
+      <div class="fld"><label>Payment Type</label>
+        <div class="trow">${['cash','upi','credit'].map(m=>`<button class="tag${sf.payment_type===m?' on':''}" onclick="setSPT('${m}')">${m.toUpperCase()}</button>`).join('')}</div>
+      </div>
+    </div>
+    <div class="row" style="gap:8px">
+      <button class="btn bpri" onclick="saveSale()">Log Sale</button>
+      <button class="btn bgho bsm" onclick="exportCSV('sales')">⬇️ Export CSV</button>
+    </div>
+  </div>
+  ${S.sales.length===0?`<div class="empty"><div class="eico">💰</div><div class="etit">No sales yet</div></div>`
+  :`<div class="twrap"><table><thead><tr><th>Customer</th><th>Date</th><th>FY</th><th>Payment</th><th>Amount</th><th></th></tr></thead>
+    <tbody>${S.sales.map(s=>`<tr>
+      <td class="fw6">${esc(s.customer)}</td><td class="tx2 fs11">${fmtDate(s.date)}</td>
+      <td class="tx2 fs11">${s.fy||'—'}</td>
+      <td><span class="bdg ${pb(s.payment_type)}">${s.payment_type.toUpperCase()}</span></td>
+      <td class="fw6">${fmt(s.amount)}</td>
+      <td><button class="btn bdng bsm" onclick="delS('${s.id}')">🗑️</button></td>
+    </tr>`).join('')}</tbody></table></div>`}`;
+}
+
+/* ── EXPENSES ───────────────────────────────────── */
+function renderExpenses(){
+  const ef=S.efForm;
+  const byMonth={};S.expenses.forEach(e=>{const m=e.date?.slice(0,7)||'?';if(!byMonth[m])byMonth[m]=[];byMonth[m].push(e);});
+  const months=Object.keys(byMonth).sort().reverse();
+  const totByCat={};S.expenses.forEach(e=>{totByCat[e.category]=(totByCat[e.category]||0)+Number(e.amount);});
+  return `<div class="g2 mb14">
+    <div class="card">
+      <div class="ctitle">+ Add Expense</div>
+      <div class="g2">
+        <div class="fld"><label>Category</label>
+          <select id="ef-cat">${EXP_CATS.map(c=>`<option value="${c}"${c===ef.category?' selected':''}>${c}</option>`).join('')}</select>
+        </div>
+        <div class="fld"><label>Amount (₹) *</label><input id="ef-am" type="number" placeholder="0" value="${esc(ef.amount)}"></div>
+      </div>
+      <div class="g2">
+        <div class="fld"><label>Description</label><input id="ef-desc" placeholder="e.g. August rent" value="${esc(ef.description)}"></div>
+        <div class="fld"><label>Date</label><input id="ef-dt" type="date" value="${ef.date}"></div>
+      </div>
+      <div class="row" style="gap:8px">
+        <button class="btn bpri" onclick="saveExpense()">Add Expense</button>
+        <button class="btn bgho bsm" onclick="exportCSV('expenses')">⬇️ Export CSV</button>
+      </div>
+    </div>
+    <div class="card"><div class="ctitle">📊 By Category</div>
+      ${Object.keys(totByCat).length===0?`<div class="tx2 fs13">No expenses yet</div>`
+        :Object.entries(totByCat).sort((a,b)=>b[1]-a[1]).map(([cat,tot])=>`
+          <div class="row jbet" style="padding:6px 0;border-bottom:1px solid var(--bor)">
+            <span class="fs13">${cat}</span><span class="fw6 txred">${fmt(tot)}</span>
+          </div>`).join('')}
+    </div>
+  </div>
+  ${months.length===0?`<div class="empty"><div class="eico">💸</div><div class="etit">No expenses yet</div></div>`
+  :months.map(m=>`<div class="gst-month">
+    <div class="gst-mhead" onclick="toggleSection('em-${m}')">
+      <div><div class="fw6 fs13">${monthLabel(m+'-01')}</div><div class="tx2 fs11">${byMonth[m].length} entries</div></div>
+      <div class="fw6 txred">${fmt(byMonth[m].reduce((a,e)=>a+Number(e.amount),0))}</div>
+    </div>
+    <div id="em-${m}" style="display:none"><div class="gst-mbody">
+      <div class="twrap"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th></th></tr></thead>
+      <tbody>${byMonth[m].map(e=>`<tr>
+        <td class="tx2 fs11">${fmtDate(e.date)}</td>
+        <td><span class="bdg ${ECOL[e.category]||''}">${esc(e.category)}</span></td>
+        <td>${esc(e.description||'—')}</td>
+        <td class="fw6 txred">${fmt(e.amount)}</td>
+        <td><button class="btn bdng bsm" onclick="delExpense('${e.id}')">🗑️</button></td>
+      </tr>`).join('')}</tbody></table></div>
+    </div></div>
+  </div>`).join('')}`;
+}
+
+/* ── CREDIT ─────────────────────────────────────── */
+function renderCredit(cC,tC){
+  const overdueC = cC.filter(c=>c.due_date && c.due_date < today());
+  return `${cC.length>0?`<div class="alert awrn">⚠️ <b>${cC.length} customers</b> owe <b>${fmt(tC)}</b> total${overdueC.length>0?` · <span style="color:var(--red)">${overdueC.length} overdue</span>`:''}</div>`:''}
+  ${cC.length===0?`<div class="empty"><div class="eico">✅</div><div class="etit">All dues settled!</div></div>`
+  :`<div class="twrap"><table><thead><tr><th>Customer</th><th>Phone</th><th>Due Date</th><th>Outstanding</th><th>Actions</th></tr></thead>
+    <tbody>${cC.map(c=>`<tr>
+      <td class="fw6">${esc(c.name)}</td><td class="tx2">${esc(c.phone||'—')}</td>
+      <td class="${c.due_date&&c.due_date<today()?'txred fw6':'tx2 fs11'}">${c.due_date?fmtDate(c.due_date):'—'}${c.due_date&&c.due_date<today()?' ⚠️':''}</td>
+      <td class="fw6 txred">${fmt(c.outstanding)}</td>
+      <td><div class="row" style="gap:4px">
+        <button class="btn bgrn bsm" onclick="openPayModal('${c.id}')">💳 Collect</button>
+        <button class="btn bgho bsm" onclick="openRem('${c.id}')">📩 Remind</button>
+        ${c.phone?`<button class="btn bwa bsm" onclick="quickWA('${c.id}')">💬 WA</button>`:''}
+      </div></td>
+    </tr>`).join('')}</tbody></table></div>`}`;
+}
+
+/* ── PAYMENTS ───────────────────────────────────── */
+function renderPayments(){
+  const grouped={};
+  S.payments.forEach(p=>{if(!grouped[p.customer_name])grouped[p.customer_name]=[];grouped[p.customer_name].push(p);});
+  const custNames=Object.keys(grouped).sort();
+  return `<div class="alert ainfo mb14">💡 Every payment collected is a new row — data is never replaced.</div>
+  ${S.payments.length===0?`<div class="empty"><div class="eico">💳</div><div class="etit">No payments collected yet</div><div class="tx2">Go to Credit tab → click Collect</div></div>`
+  :custNames.map(name=>{
+    const pays=grouped[name].sort((a,b)=>b.date>a.date?1:-1);
+    const total=pays.reduce((a,p)=>a+Number(p.amount),0);
+    const cust=S.customers.find(c=>c.name.toLowerCase()===name.toLowerCase());
+    return `<div class="card mb14">
+      <div class="row jbet mb12">
+        <div><div class="fw6 fs13">${esc(name)}</div>
+          <div class="tx2 fs11">Collected: <span class="txgrn fw6">${fmt(total)}</span>${cust?` · Outstanding: <span class="txred fw6">${fmt(cust.outstanding)}</span>`:''}</div>
+        </div>
+        ${cust?`<button class="btn bgrn bsm" onclick="openPayModal('${cust.id}')">+ Collect</button>`:''}
+      </div>
+      <div class="pay-ledger">
+        <div class="pay-hdr"><span>Date</span><span>Note</span><span>Method</span><span>Invoice</span><span>Amount</span><span></span></div>
+        ${pays.map(p=>`<div class="pay-row">
+          <span class="tx2 fs11">${fmtDate(p.date)}</span>
+          <span class="fs12">${esc(p.note||'—')}</span>
+          <span><span class="bdg ${pb(p.method)}">${(p.method||'cash').toUpperCase()}</span></span>
+          <span class="tx2 fs11">${esc(p.invoice_ref||'—')}</span>
+          <span class="fw6 txgrn">${fmt(p.amount)}</span>
+          <span><button class="btn bdng bsm" style="padding:2px 5px" onclick="delPayment('${p.id}')">🗑️</button></span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('')}`;
+}
+
+/* ── PAYMENT MODAL ──────────────────────────────── */
+window.openPayModal = id => { if(!id){alert('Select customer from Credit tab');return;} S.payModal=S.customers.find(c=>c.id===id)||null; render(); };
+window.closePayModal = () => { S.payModal=null; render(); };
+
+function renderPayModal(){
+  const c=S.payModal; if(!c) return '';
+  const history=S.payments.filter(p=>p.customer_name.toLowerCase()===c.name.toLowerCase()).sort((a,b)=>b.date>a.date?1:-1);
+  const totalColl=history.reduce((a,p)=>a+Number(p.amount),0);
+  return `<div class="mover" onclick="closePayModal()">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:520px">
+      <div class="row jbet mb14"><div class="mtit">💳 Collect Payment — ${esc(c.name)}</div><button class="ibtn" onclick="closePayModal()">✕</button></div>
+      <div class="alert ainfo">Outstanding: <b class="txred">${fmt(c.outstanding)}</b> · Previously collected: <b class="txgrn">${fmt(totalColl)}</b></div>
+      <div class="g2">
+        <div class="fld"><label>Amount Received *</label><input id="pay-am" type="number" placeholder="0" style="font-size:16px;font-weight:600"></div>
+        <div class="fld"><label>Date</label><input id="pay-dt" type="date" value="${today()}"></div>
+      </div>
+      <div class="g2">
+        <div class="fld"><label>Method</label>
+          <select id="pay-mt"><option value="cash">Cash</option><option value="upi">UPI</option><option value="cheque">Cheque</option><option value="bank">Bank Transfer</option></select>
+        </div>
+        <div class="fld"><label>Invoice Ref</label>
+          <select id="pay-inv"><option value="">— None —</option>
+            ${S.invoices.filter(i=>i.customer_name?.toLowerCase()===c.name.toLowerCase()&&(i.payment_method==='credit'||i.is_partial)).map(i=>`<option value="${esc(i.invoice_no)}">${esc(i.invoice_no)} — ${fmt(i.total)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="fld"><label>Note</label><input id="pay-note" placeholder="e.g. Partial payment, cheque no. 12345"></div>
+      <div class="row mt14" style="gap:8px">
+        <button class="btn bgrn wfull" onclick="savePayment('${c.id}')">💳 Record Payment</button>
+        <button class="btn bgho" onclick="closePayModal()">Cancel</button>
+      </div>
+      ${history.length>0?`<div style="margin-top:16px;border-top:1.5px solid var(--bor);padding-top:14px">
+        <div class="fw6 fs12 mb8">Payment History</div>
+        <div class="pay-ledger">
+          <div class="pay-hdr"><span>Date</span><span>Note</span><span>Method</span><span>Invoice</span><span>Amount</span><span></span></div>
+          ${history.map(p=>`<div class="pay-row">
+            <span class="tx2 fs11">${fmtDate(p.date)}</span><span class="fs12">${esc(p.note||'—')}</span>
+            <span><span class="bdg ${pb(p.method)}">${(p.method||'').toUpperCase()}</span></span>
+            <span class="tx2 fs11">${esc(p.invoice_ref||'—')}</span>
+            <span class="fw6 txgrn">${fmt(p.amount)}</span><span></span>
+          </div>`).join('')}
+        </div>
+      </div>`:''}
+    </div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════
+   GST REPORTS
+══════════════════════════════════════════════════ */
+function renderGST(){
+  if(!S.firm.gst_registered){
+    return `<div class="sh"><div><div class="st">GST Reports</div></div></div>
+    <div class="alert ainfo">You are registered as <b>Unregistered</b> (Bill of Supply). GST reports are not applicable. <button class="btn bgho bsm" onclick="editFirm()">⚙️ Update GST status</button></div>`;
+  }
+  const allFYs=[...new Set(S.invoices.map(i=>i.fy).filter(Boolean))].sort().reverse();
+  const fy=S.fyFilter==='all'?null:S.fyFilter;
+  const invs=S.invoices.filter(i=>!fy||i.fy===fy);
+  const prchs=S.purchases.filter(p=>!fy||p.fy===fy);
+  const byMonth={};
+  invs.forEach(inv=>{const m=inv.date?.slice(0,7)||'?';if(!byMonth[m])byMonth[m]=[];byMonth[m].push(inv);});
+  const purchByM={};prchs.forEach(p=>{const m=p.date?.slice(0,7)||'?';if(!purchByM[m])purchByM[m]=[];purchByM[m].push(p);});
+  const allMonths=[...new Set([...Object.keys(byMonth),...Object.keys(purchByM)])].sort().reverse();
+  const totalTax=invs.reduce((a,i)=>a+Number(i.subtotal||buildInvTotals(i.items||[],true).totalTaxable),0);
+  const totalGST=invs.reduce((a,i)=>a+Number(i.gst_amount||buildInvTotals(i.items||[],true).totalGST),0);
+  const totalPurch=prchs.reduce((a,p)=>a+Number(p.amount),0);
+  return `<div class="sh">
+    <div><div class="st">GST Reports — GSTR-1</div><div class="sb">${S.firm.gstin?`GSTIN: ${S.firm.gstin}`:''} · ${S.firm.state}</div></div>
+    <div class="row" style="gap:8px">
+      <select onchange="setFY(this.value)" style="padding:6px 10px;border:1.5px solid var(--bor);border-radius:8px;background:var(--surf2);color:var(--tx);font-size:12px;outline:none">
+        <option value="all">All Financial Years</option>
+        ${allFYs.map(f=>`<option value="${f}"${S.fyFilter===f?' selected':''}>${fyLabel(f)}</option>`).join('')}
+      </select>
+      <button class="btn bgho bsm" onclick="exportCSV('gst')">⬇️ Export</button>
+    </div>
+  </div>
+  <div class="alert ainfo mb14">📋 File <b>GSTR-1</b> by 11th of next month. <b>GSTR-3B</b> by 20th. Figures below are ready-to-use.</div>
+  <div class="g3 mb14">
+    <div class="sc"><div class="sl">Taxable Sales</div><div class="sv txacc">${fmt(totalTax)}</div><div class="ss">Excl. GST · ${invs.length} invoices</div></div>
+    <div class="sc"><div class="sl">Output GST (CGST+SGST)</div><div class="sv txred">${fmt(totalGST)}</div><div class="ss">Payable to govt</div></div>
+    <div class="sc"><div class="sl">Total Purchases</div><div class="sv">${fmt(totalPurch)}</div><div class="ss">For input credit ref</div></div>
+  </div>
+  ${allMonths.length===0?`<div class="empty"><div class="eico">📊</div><div class="etit">No data for this period</div></div>`
+  :allMonths.map(m=>{
+    const minvs=byMonth[m]||[];
+    const mprchs=purchByM[m]||[];
+    const mt=minvs.reduce((acc,inv)=>{const t=buildInvTotals(inv.items||[],true);acc.taxable+=t.totalTaxable;acc.gst+=t.totalGST;acc.gstSum=mergeGSTSummary(acc.gstSum,t.gstSummary);return acc;},{taxable:0,gst:0,gstSum:{}});
+    const gestIn=mprchs.reduce((a,p)=>a+Number(p.amount),0)*0.18;
+    const netGST=Math.max(0,mt.gst-gestIn);
+    return `<div class="gst-month">
+      <div class="gst-mhead" onclick="toggleSection('gm-${m}')">
+        <div><div class="fw6 fs13">${monthLabel(m+'-01')}</div><div class="tx2 fs11">${minvs.length} invoices · ${mprchs.length} purchases</div></div>
+        <div style="text-align:right"><div class="fw6 txacc">${fmt(mt.taxable)}</div><div class="tx2 fs11">GST: ${fmt(mt.gst)}</div></div>
+      </div>
+      <div id="gm-${m}" style="display:none"><div class="gst-mbody">
+        <div class="g2 mb14">
+          <div><div class="fw6 fs12 mb8">📤 Output Tax</div>
+            <div class="gst-row"><span class="tx2">Taxable</span><span class="fw6">${fmt(mt.taxable)}</span></div>
+            <div class="gst-row"><span class="tx2">Total GST</span><span class="fw6 txred">${fmt(mt.gst)}</span></div>
+            <div class="gst-row"><span class="tx2">CGST</span><span>${fmt(mt.gst/2)}</span></div>
+            <div class="gst-row"><span class="tx2">SGST</span><span>${fmt(mt.gst/2)}</span></div>
+          </div>
+          <div><div class="fw6 fs12 mb8">📥 Input Credit</div>
+            <div class="gst-row"><span class="tx2">Purchase Value</span><span>${fmt(mprchs.reduce((a,p)=>a+Number(p.amount),0))}</span></div>
+            <div class="gst-row"><span class="tx2">Est. Input GST @18%</span><span class="txgrn">${fmt(gestIn)}</span></div>
+            <div class="gst-row"><span class="tx2">Net GST Payable</span><span class="fw6 txred">${fmt(netGST)}</span></div>
+          </div>
+        </div>
+        <div class="fw6 fs12 mb8">Breakup by GST Rate</div>
+        <div class="twrap"><table>
+          <thead><tr><th>Rate</th><th>Invoices</th><th>Taxable</th><th>CGST</th><th>SGST</th><th>Total GST</th></tr></thead>
+          <tbody>
+            ${Object.entries(mt.gstSum).sort((a,b)=>Number(a[0])-Number(b[0])).map(([r,d])=>`<tr>
+              <td><span class="bdg bu">${r}%</span></td>
+              <td>${minvs.filter(i=>(i.items||[]).some(it=>Number(it.gst_rate)===Number(r))).length}</td>
+              <td>${fmt(d.taxable)}</td><td class="txred">${fmt(d.cgst)}</td><td class="txred">${fmt(d.sgst)}</td>
+              <td class="fw6 txred">${fmt(d.gst)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table></div>
+        ${minvs.length>0?`<div class="fw6 fs12 mt14 mb8">Invoice Details</div>
+        <div class="twrap"><table>
+          <thead><tr><th>Invoice #</th><th>Customer</th><th>Date</th><th>Taxable</th><th>CGST</th><th>SGST</th><th>Total</th></tr></thead>
+          <tbody>${minvs.map(inv=>{const t=buildInvTotals(inv.items||[],true);return`<tr>
+            <td class="txacc fs11 fw6">${esc(inv.invoice_no)}</td>
+            <td>${esc(inv.customer_name||'—')}</td>
+            <td class="tx2 fs11">${fmtDate(inv.date)}</td>
+            <td>${fmt(t.totalTaxable)}</td>
+            <td class="txred">${fmt(t.totalGST/2)}</td>
+            <td class="txred">${fmt(t.totalGST/2)}</td>
+            <td class="fw6">${fmt(inv.total)}</td>
+          </tr>`;}).join('')}</tbody>
+        </table></div>`:''}
+      </div></div>
+    </div>`;
+  }).join('')}`;
+}
+
+function mergeGSTSummary(a,b){
+  const out={...a};
+  Object.entries(b).forEach(([r,d])=>{
+    if(!out[r])out[r]={taxable:0,gst:0,cgst:0,sgst:0};
+    out[r].taxable+=d.taxable;out[r].gst+=d.gst;out[r].cgst+=d.cgst;out[r].sgst+=d.sgst;
+  });
+  return out;
+}
+
+/* ══════════════════════════════════════════════════
+   INVENTORY / STOCK
+══════════════════════════════════════════════════ */
+function renderInventoryMode(){
+  const iif = S.invItemForm;
+  const lowStock = S.inventory.filter(i=>Number(i.stock)<=5);
+  return `<div class="sh">
+    <div><div class="st">Stock / Item Master</div><div class="sb">${S.inventory.length} items · ${lowStock.length} low stock</div></div>
+    <button class="btn bgho bsm" onclick="exportCSV('inventory')">⬇️ Export CSV</button>
+  </div>
+  ${lowStock.length>0?`<div class="alert awrn mb14">⚠️ Low stock: ${lowStock.map(i=>esc(i.name)).join(', ')}</div>`:''}
+  <div class="card mb14">
+    <div class="ctitle">+ Add / Update Item</div>
+    <div class="g3">
+      <div class="fld"><label>Item Name *</label><input id="ii-nm" value="${esc(iif.name)}" placeholder="e.g. Tata Salt 1kg"></div>
+      <div class="fld"><label>Unit</label>
+        <select id="ii-un">${UNITS.map(u=>`<option value="${u}"${u===iif.unit?' selected':''}>${u}</option>`).join('')}</select>
+      </div>
+      <div class="fld"><label>Selling Rate ₹</label><input id="ii-rt" type="number" min="0" step="0.01" value="${iif.rate}" placeholder="0"></div>
+    </div>
+    <div class="g2">
+      ${S.firm.gst_registered?`<div class="fld"><label>GST Rate</label>
+        <select id="ii-gr">${GST_SLABS.map(r=>`<option value="${r}"${Number(r)===Number(iif.gst_rate)?' selected':''}>${r}% GST</option>`).join('')}</select>
+      </div>`:'<div></div>'}
+      <div class="fld"><label>Stock Quantity</label><input id="ii-st" type="number" min="0" value="${iif.stock}" placeholder="0"></div>
+    </div>
+    <button class="btn bpri" onclick="saveInvItem()">Save Item</button>
+  </div>
+  ${S.inventory.length===0?`<div class="empty"><div class="eico">📦</div><div class="etit">No items in master yet</div><div class="tx2">Add items above — they'll appear as autocomplete in invoices</div></div>`
+  :`<div class="twrap"><table>
+    <thead><tr><th>Item Name</th><th>Unit</th><th>Rate</th>${S.firm.gst_registered?'<th>GST%</th>':''}<th>Stock</th><th>Value</th><th>Actions</th></tr></thead>
+    <tbody>${S.inventory.map(item=>`<tr class="${Number(item.stock)<=5?'stock-low':''}">
+      <td class="fw6">${esc(item.name)}</td>
+      <td class="tx2">${esc(item.unit)}</td>
+      <td>${fmt(item.rate)}</td>
+      ${S.firm.gst_registered?`<td><span class="bdg bu">${item.gst_rate}%</span></td>`:''}
+      <td class="${Number(item.stock)<=5?'txred fw6':''}">${item.stock} ${Number(item.stock)<=5?'⚠️':''}</td>
+      <td class="tx2">${fmt(item.rate*item.stock)}</td>
+      <td><div class="row" style="gap:4px">
+        <button class="btn bgho bsm" onclick="editInvItem('${item.id}')">✏️</button>
+        <button class="btn bpri bsm" onclick="addStock('${item.id}')">+ Stock</button>
+        <button class="btn bdng bsm" onclick="delInvItem('${item.id}')">🗑️</button>
+      </div></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`}`;
+}
+
+/* ── CUSTOMERS ──────────────────────────────────── */
+function renderCustomers(){
+  const fil=S.custFilter;
+  const list=fil==='all'?S.customers:fil==='out'?S.customers.filter(c=>Number(c.outstanding)>0):S.customers.filter(c=>c.payment_method===fil);
+  const tB=S.customers.reduce((a,c)=>a+Number(c.total_business||0),0);
+  const tO=S.customers.reduce((a,c)=>a+Number(c.outstanding||0),0);
+  return `<div class="sh">
+    <div><div class="st">Customers</div><div class="sb">${S.customers.length} total · ${fmt(tB)} business · ${fmt(tO)} outstanding</div></div>
+    <div class="row" style="gap:8px">
+      <button class="btn bgho bsm" onclick="exportCSV('customers')">⬇️ Export CSV</button>
+      <button class="btn bgho" onclick="swPage('main')">← Back</button>
+    </div>
+  </div>
+  <div class="frow">
+    ${[['all','All'],['cash','Cash'],['upi','UPI'],['credit','Credit'],['out','Outstanding']].map(([f,l])=>`<button class="fbtn${fil===f?' on':''}" onclick="setCF('${f}')">${l}</button>`).join('')}
+  </div>
+  ${list.length===0?`<div class="empty"><div class="eico">👥</div><div class="etit">No customers found</div></div>`
+  :`<div class="twrap"><table>
+    <thead><tr><th>Name</th><th>Phone</th><th>Payment</th><th>Total Business</th><th>Outstanding</th><th>Last Date</th><th></th></tr></thead>
+    <tbody>${list.map(c=>`<tr>
+      <td class="fw6">${esc(c.name)}</td><td class="tx2">${esc(c.phone||'—')}</td>
+      <td><span class="bdg ${pb(c.payment_method)}">${(c.payment_method||'').toUpperCase()}</span></td>
+      <td class="fw6">${fmt(c.total_business)}</td>
+      <td class="fw6" style="color:${Number(c.outstanding)>0?'var(--red)':'var(--grn)'}">${Number(c.outstanding)>0?fmt(c.outstanding):'Settled ✓'}</td>
+      <td class="tx2 fs11">${fmtDate(c.last_date)}</td>
+      <td><button class="btn bdng bsm" onclick="delCust('${c.id}')">🗑️</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`}`;
+}
+
+/* ── REMINDER MODAL ─────────────────────────────── */
+function renderReminderModal(){
+  const c=S.reminder; if(!c) return '';
+  const msg=`Dear ${c.name},\n\nThis is a gentle reminder from ${S.firm.firm_name}.\n\nYou have an outstanding balance of ${fmt(c.outstanding)} as on ${fmtDate(today())}.\n\nKindly settle at your earliest convenience.\n\nThank you for your continued business! 🙏`;
+  S._reminderMsg=msg;
+  return `<div class="mover" onclick="closeRem()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="mtit">📩 Reminder — ${esc(c.name)}</div>
+      <div class="rmtxt">${esc(msg)}</div>
+      <div class="row mt14" style="flex-wrap:wrap;gap:7px">
+        ${c.phone?`<button class="btn bwa" onclick="sendWA('${c.id}')">💬 WhatsApp</button>`:''}
+        <button class="btn bgho" onclick="copyRem()">📋 Copy</button>
+        <button class="btn bgho" onclick="closeRem()">Close</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════
+   EXPORT CSV
+══════════════════════════════════════════════════ */
+function toCSV(rows, headers) {
+  const esc2 = v => `"${String(v||'').replace(/"/g,'""')}"`;
+  return [headers.map(esc2).join(','), ...rows.map(r=>headers.map(h=>esc2(r[h])).join(','))].join('\n');
+}
+
+window.exportCSV = type => {
+  let csv='', fname='';
+  if(type==='invoices'||type==='all'){
+    const rows=S.invoices.map(i=>({
+      'Invoice No':i.invoice_no,'FY':i.fy||'','Date':i.date,'Customer':i.customer_name||'',
+      'Phone':i.customer_phone||'','Payment':i.payment_method,'Status':i.status||'',
+      'Subtotal':buildInvTotals(i.items||[],S.firm.gst_registered).totalTaxable,
+      'Total GST':buildInvTotals(i.items||[],S.firm.gst_registered).totalGST,
+      'Grand Total':i.total,'Due Date':i.due_date||''
+    }));
+    csv+=toCSV(rows,['Invoice No','FY','Date','Customer','Phone','Payment','Status','Subtotal','Total GST','Grand Total','Due Date']);
+    if(type==='all') csv+='\n\n';
+    else { downloadCSV(csv,'invoices.csv'); return; }
+  }
+  if(type==='purchases'||type==='all'){
+    const rows=S.purchases.map(p=>({'Date':p.date,'FY':p.fy||'','Supplier':p.supplier,'Item':p.item||'','Amount':p.amount,'Status':p.status}));
+    csv+=toCSV(rows,['Date','FY','Supplier','Item','Amount','Status']);
+    if(type==='all') csv+='\n\n'; else { downloadCSV(csv,'purchases.csv'); return; }
+  }
+  if(type==='sales'||type==='all'){
+    const rows=S.sales.map(s=>({'Date':s.date,'FY':s.fy||'','Customer':s.customer,'Amount':s.amount,'Payment':s.payment_type}));
+    csv+=toCSV(rows,['Date','FY','Customer','Amount','Payment']);
+    if(type==='all') csv+='\n\n'; else { downloadCSV(csv,'sales.csv'); return; }
+  }
+  if(type==='expenses'||type==='all'){
+    const rows=S.expenses.map(e=>({'Date':e.date,'FY':e.fy||'','Category':e.category,'Description':e.description||'','Amount':e.amount}));
+    csv+=toCSV(rows,['Date','FY','Category','Description','Amount']);
+    if(type==='all') csv+='\n\n'; else { downloadCSV(csv,'expenses.csv'); return; }
+  }
+  if(type==='gst'){
+    const rows=S.invoices.filter(i=>S.fyFilter==='all'||i.fy===S.fyFilter).map(i=>{const t=buildInvTotals(i.items||[],true);return{'Invoice':i.invoice_no,'FY':i.fy||'','Date':i.date,'Customer':i.customer_name||'','Taxable':t.totalTaxable,'CGST':t.totalGST/2,'SGST':t.totalGST/2,'Total GST':t.totalGST,'Grand Total':i.total};});
+    csv=toCSV(rows,['Invoice','FY','Date','Customer','Taxable','CGST','SGST','Total GST','Grand Total']);
+    downloadCSV(csv,'gst_report.csv'); return;
+  }
+  if(type==='inventory'){
+    const rows=S.inventory.map(i=>({'Name':i.name,'Unit':i.unit,'Rate':i.rate,'GST%':i.gst_rate,'Stock':i.stock,'Value':i.rate*i.stock}));
+    csv=toCSV(rows,['Name','Unit','Rate','GST%','Stock','Value']);
+    downloadCSV(csv,'inventory.csv'); return;
+  }
+  if(type==='customers'){
+    const rows=S.customers.map(c=>({'Name':c.name,'Phone':c.phone||'','Payment':c.payment_method,'Total Business':c.total_business||0,'Outstanding':c.outstanding||0,'Last Date':c.last_date||''}));
+    csv=toCSV(rows,['Name','Phone','Payment','Total Business','Outstanding','Last Date']);
+    downloadCSV(csv,'customers.csv'); return;
+  }
+  if(type==='all') downloadCSV(csv, 'retailflow_export.csv');
+};
+
+window.exportAll = () => exportCSV('all');
+
+function downloadCSV(csv, fname) {
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ══════════════════════════════════════════════════
+   ALL WINDOW ACTIONS
+══════════════════════════════════════════════════ */
+window.toggleDark  = () => { setDark(!S.dark); render(); };
+window.swMode      = m => { S.mode=m; S.page='main'; S.tab='create'; S.bizTab='dash'; render(); };
+window.swPage      = p => { S.page=p; render(); };
+window.swTab       = t => { S.tab=t; render(); };
+window.swBiz       = t => { S.bizTab=t; render(); };
+window.setIF       = f => { S.invFilter=f; render(); };
+window.setCF       = f => { S.custFilter=f; render(); };
+window.setFY       = f => { S.fyFilter=f; render(); };
+window.dismissV    = () => { S.viewInv=null; render(); };
+window.viewI       = id => { S.viewInv=S.invoices.find(i=>i.id===id)||null; render(); };
+window.newInv      = () => { S.invForm=blankInv(); S.viewInv=null; S.tab='create'; render(); };
+window.clearInv    = () => { S.invForm=blankInv(); render(); };
+window.editFirm = () => { S._editFirmOpen = true; S._editGST = S.firm.gst_registered; render(); };
+window.closeEditFirm = () => { S._editFirmOpen = false; render(); };
+window.toggleEditGST = v => {
+  S._editGST = v;
+  // preserve current form values before re-render
+  const grab = id => document.getElementById(id)?.value || '';
+  if(S._efmTemp === undefined) S._efmTemp = {};
+  S._efmTemp = {
+    nm:grab('efm-nm'), pr:grab('efm-pr'), ph:grab('efm-ph'), ad:grab('efm-ad'),
+    gs:grab('efm-gs'), st:grab('efm-st'), gr:grab('efm-gr'),
+    pm:grab('efm-pm'), upi:grab('efm-upi'),
+    bn:grab('efm-bn'), bac:grab('efm-bac'), bif:grab('efm-bif'), bbr:grab('efm-bbr'),
+    notes:grab('efm-notes'),
+  };
+  render();
+};
+
+function renderEditFirmModal() {
+  const f = S.firm;
+  const gst = S._editGST !== undefined ? S._editGST : f.gst_registered;
+  const t = S._efmTemp || {};
+  const v = (key, fallback) => t[key] !== undefined ? t[key] : (fallback || '');
+
+  return `<div class="mover" onclick="closeEditFirm()">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:580px;max-height:92vh;overflow-y:auto">
+      <div class="row jbet mb14">
+        <div class="mtit">⚙️ Edit Business Profile</div>
+        <button class="ibtn" onclick="closeEditFirm()">✕</button>
+      </div>
+
+      <div class="sechead">Business Info</div>
+      <div class="fld"><label>Firm / Business Name *</label>
+        <input id="efm-nm" value="${esc(v('nm', f.firm_name))}" placeholder="e.g. Sharma General Store">
+      </div>
+      <div class="g2">
+        <div class="fld"><label>Proprietor Name *</label>
+          <input id="efm-pr" value="${esc(v('pr', f.proprietor))}" placeholder="Your full name">
+        </div>
+        <div class="fld"><label>Phone</label>
+          <input id="efm-ph" value="${esc(v('ph', f.phone||''))}" placeholder="Mobile number" type="tel">
+        </div>
+      </div>
+      <div class="fld"><label>Business Address *</label>
+        <textarea id="efm-ad" rows="2">${esc(v('ad', f.address))}</textarea>
+      </div>
+
+      <div class="sechead">GST Status</div>
+      <div class="fld">
+        <label>Are you GST Registered?</label>
+        <div class="tgl">
+          <button class="${!gst?'on':''}" onclick="toggleEditGST(false)">❌ No — Bill of Supply</button>
+          <button class="${gst?'on':''}" onclick="toggleEditGST(true)">✅ Yes — Tax Invoice</button>
+        </div>
+        <div class="fs11 tx2 mt8">${gst ? 'Invoices will show <b>CGST + SGST</b> breakdown per item.' : 'No GST charged to customers. <b>Bill of Supply</b> format.'}</div>
+      </div>
+      ${gst ? `
+      <div class="g2">
+        <div class="fld"><label>GSTIN *</label>
+          <input id="efm-gs" value="${esc(v('gs', f.gstin||''))}" placeholder="22AAAAA0000A1Z5" maxlength="15" oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <div class="fld"><label>State *</label>
+          <select id="efm-st">
+            <option value="">Select state…</option>
+            ${STATES.map(s => `<option value="${esc(s)}"${(v('st',f.state||''))===s?' selected':''}>${esc(s)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="fld"><label>Default Item GST Rate</label>
+        <select id="efm-gr">
+          ${GST_SLABS.map(r => `<option value="${r}"${Number(v('gr', f.default_gst_rate||18))===r?' selected':''}>${r}% GST</option>`).join('')}
+        </select>
+      </div>` : `<input type="hidden" id="efm-gs" value=""><input type="hidden" id="efm-st" value=""><input type="hidden" id="efm-gr" value="0">`}
+
+      <div class="sechead">Payment & UPI</div>
+      <div class="g2">
+        <div class="fld"><label>Default Payment Method</label>
+          <select id="efm-pm">
+            ${['cash','upi','credit','cheque'].map(m=>`<option value="${m}"${v('pm',f.payment_method||'cash')===m?' selected':''}>${m.charAt(0).toUpperCase()+m.slice(1)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fld"><label>UPI ID (for QR)</label>
+          <input id="efm-upi" value="${esc(v('upi', f.upi_id||''))}" placeholder="shopname@upi">
+        </div>
+      </div>
+
+      <div class="sechead">Bank Details</div>
+      <div class="g2">
+        <div class="fld"><label>Account Holder Name</label>
+          <input id="efm-bn" value="${esc(v('bn', f.bank_name||''))}" placeholder="As per bank records">
+        </div>
+        <div class="fld"><label>Account Number</label>
+          <input id="efm-bac" value="${esc(v('bac', f.bank_acc||''))}" placeholder="Bank account number">
+        </div>
+      </div>
+      <div class="g2">
+        <div class="fld"><label>IFSC Code</label>
+          <input id="efm-bif" value="${esc(v('bif', f.bank_ifsc||''))}" placeholder="e.g. SBIN0001234" oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <div class="fld"><label>Bank & Branch</label>
+          <input id="efm-bbr" value="${esc(v('bbr', f.bank_branch||''))}" placeholder="e.g. SBI, MG Road">
+        </div>
+      </div>
+
+      <div class="sechead">Invoice Defaults</div>
+      <div class="fld"><label>Default Terms / Footer Note</label>
+        <textarea id="efm-notes" rows="2" placeholder="e.g. Goods once sold will not be returned.">${esc(v('notes', f.default_notes||''))}</textarea>
+      </div>
+
+      <div class="row mt14" style="gap:8px;justify-content:flex-end">
+        <button class="btn bgho" onclick="closeEditFirm()">Cancel</button>
+        <button class="btn bpri" onclick="saveEditFirm()">💾 Save Changes</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+window.saveEditFirm = () => {
+  const g = id => document.getElementById(id)?.value?.trim() || '';
+  const nm = g('efm-nm'), pr = g('efm-pr'), ad = document.getElementById('efm-ad')?.value?.trim() || '';
+  if(!nm || !pr || !ad){ alert('Firm name, proprietor and address are required.'); return; }
+  const gst = S._editGST !== undefined ? S._editGST : S.firm.gst_registered;
+  if(gst){
+    const gstin = g('efm-gs'), st = g('efm-st');
+    if(!gstin || !st){ alert('GSTIN and State are required for GST registered businesses.'); return; }
+  }
+  S.firm = {
+    ...S.firm,
+    firm_name: nm,
+    proprietor: pr,
+    address: ad,
+    phone: g('efm-ph'),
+    gst_registered: gst,
+    gstin: gst ? g('efm-gs') : '',
+    state: gst ? g('efm-st') : '',
+    default_gst_rate: gst ? Number(g('efm-gr') || 18) : 0,
+    payment_method: g('efm-pm') || 'cash',
+    upi_id: g('efm-upi'),
+    bank_name: g('efm-bn'),
+    bank_acc: g('efm-bac'),
+    bank_ifsc: g('efm-bif'),
+    bank_branch: g('efm-bbr'),
+    default_notes: document.getElementById('efm-notes')?.value?.trim() || '',
+  };
+  S._editFirmOpen = false;
+  S._editGST = undefined;
+  S._efmTemp = undefined;
+  save(); render();
+};
+window.openRem     = id => { S.reminder=S.customers.find(c=>c.id===id)||null; render(); };
+window.closeRem    = () => { S.reminder=null; render(); };
+window.copyRem     = () => { navigator.clipboard.writeText(S._reminderMsg).then(()=>alert('Copied!')).catch(()=>{}); };
+window.sendWA      = id => { const c=S.customers.find(x=>x.id===id); if(!c?.phone) return; const n=c.phone.replace(/\D/g,''); window.open(`https://wa.me/${n.startsWith('91')?n:'91'+n}?text=${encodeURIComponent(S._reminderMsg)}`,'_blank'); };
+window.quickWA     = id => { const c=S.customers.find(x=>x.id===id); if(!c?.phone) return; const n=c.phone.replace(/\D/g,''); const msg=`Dear ${c.name}, you have an outstanding balance of ${fmt(c.outstanding)}. Kindly clear at your earliest. — ${S.firm.firm_name} 🙏`; window.open(`https://wa.me/${n.startsWith('91')?n:'91'+n}?text=${encodeURIComponent(msg)}`,'_blank'); };
+window.setIPM = m => {
+  readInvInputs();
+  S.invForm = {...S.invForm, payment_method:m};
+  render();
+};
+
+window.setIPartial = v => {
+  readInvInputs();
+  S.invForm = {...S.invForm, is_partial:v};
+  render();
+};
+window.addIItem    = () => { readInvInputs(); S.invForm.items.push(blankItem()); renderItemRows(); updateTotals(); };
+window.remIItem    = id => { readInvInputs(); S.invForm.items=S.invForm.items.filter(i=>i.id!==id); renderItemRows(); updateTotals(); };
+window.setPSt      = s => { const sup=$('p-sp')?.value||'',it=$('p-it')?.value||'',am=$('p-am')?.value||'',dt=$('p-dt')?.value||today(); S.pForm={supplier:sup,item:it,amount:am,date:dt,status:s}; render(); };
+window.setSPT      = t => { const cu=$('s-cu')?.value||'',am=$('s-am')?.value||'',dt=$('s-dt')?.value||today(); S.sForm={customer:cu,amount:am,date:dt,payment_type:t}; render(); };
+window.toggleSection = id => { const el=$(id); if(el) el.style.display=el.style.display==='none'?'block':'none'; };
+
+/* ── SAVE INVOICE ───────────────────────────────── */
+window.saveInvoice = () => {
+  readInvInputs();
+  const f = S.invForm;
+  const filledItems = f.items.filter(i=>i.name?.trim() && Number(i.rate)>0);
+  if(!f?.customer_name?.trim()){ alert('Please enter a customer name.'); return; }
+  if(filledItems.length===0){ alert('Add at least one item with a name and rate.'); return; }
+  // Only save items that have a name
+  f.items = filledItems;
+  const isReg = S.firm.gst_registered;
+  const t = buildInvTotals(f.items, isReg);
+  const {no, key, n} = getNextInvNo(f.date);
+  const fy = getFY(f.date);
+  const pm = f.payment_method;
+  const isPar = f.is_partial === true;
+  const partialAmt = isPar ? Number(f.partial_amount||0) : (pm==='cash'||pm==='upi'||pm==='cheque'?t.grandTotal:0);
+  const balance = t.grandTotal - partialAmt;
+  const status = (pm==='cash'||pm==='upi'||pm==='cheque')&&!isPar ? 'paid' : isPar ? 'partial' : 'unpaid';
+  const inv = {
+    id:uid(), invoice_no:no, month_key:key, fy,
+    customer_name:f.customer_name, customer_phone:f.customer_phone,
+    payment_method:pm, is_partial:isPar, partial_amount:partialAmt, due_date:f.due_date||'',
+    status, date:f.date||today(), notes:f.notes||'',
+    items:f.items.map(it=>({...it})),
+    subtotal:t.subtotal, total_discount:t.totalDisc, total_taxable:t.totalTaxable,
+    gst_summary:t.gstSummary, gst_amount:t.totalGST, total:t.grandTotal
+  };
+  commitInvNo(key, n);
+  S.invoices = [inv, ...S.invoices];
+  upsertCust(f.customer_name, f.customer_phone, pm, t.grandTotal, isPar ? balance : (pm==='credit'?t.grandTotal:0), f.due_date||'');
+  // Deduct inventory stock
+  f.items.forEach(it=>{
+    if(!it.name) return;
+    const inv2 = S.inventory.find(i=>i.name.toLowerCase()===it.name.toLowerCase());
+    if(inv2) { inv2.stock = Math.max(0, Number(inv2.stock||0) - Number(it.qty||0)); }
+  });
+  S.viewInv=inv; S.invForm=blankInv(); S.tab='list';
+  save(); render();
+};
+
+window.delInv = id => { if(!confirm('Delete?')) return; S.invoices=S.invoices.filter(i=>i.id!==id); if(S.viewInv?.id===id)S.viewInv=null; save(); render(); };
+
+window.duplicateInv = id => {
+  const src = S.invoices.find(i=>i.id===id); if(!src) return;
+  S.invForm = {
+    customer_name:src.customer_name, customer_phone:src.customer_phone,
+    payment_method:src.payment_method, is_partial:false,
+    partial_amount:0, due_date:'',
+    date:today(), notes:src.notes||'',
+    items:src.items.map(it=>({...it,id:uid()})), status:'paid'
+  };
+  S.tab='create'; S.viewInv=null; render();
+  alert('Invoice duplicated — check the create form. Invoice number will be assigned on save.');
+};
+
+/* ── SAVE PURCHASE ──────────────────────────────── */
+window.savePurch = () => {
+  const sup=$('p-sp')?.value?.trim(), amt=Number($('p-am')?.value);
+  if(!sup||!amt){ alert('Fill supplier and amount.'); return; }
+  const dt=$('p-dt')?.value||today();
+  S.purchases=[{id:uid(),supplier:sup,item:$('p-it')?.value?.trim()||'',amount:amt,date:dt,status:S.pForm?.status||'paid',fy:getFY(dt)},...S.purchases];
+  S.pForm=blankP(); save(); render();
+};
+window.delP = id => { if(!confirm('Delete?'))return; S.purchases=S.purchases.filter(p=>p.id!==id); save(); render(); };
+
+/* ── SAVE SALE ──────────────────────────────────── */
+window.saveSale = () => {
+  const cu=$('s-cu')?.value?.trim(), amt=Number($('s-am')?.value);
+  if(!cu||!amt){ alert('Fill customer and amount.'); return; }
+  const pt=S.sForm?.payment_type||'cash', dt=$('s-dt')?.value||today();
+  S.sales=[{id:uid(),customer:cu,amount:amt,date:dt,payment_type:pt,fy:getFY(dt)},...S.sales];
+  upsertCust(cu,'',pt,amt,pt==='credit'?amt:0,'');
+  S.sForm=blankS(); save(); render();
+};
+window.delS = id => { if(!confirm('Delete?'))return; S.sales=S.sales.filter(s=>s.id!==id); save(); render(); };
+
+/* ── SAVE EXPENSE ───────────────────────────────── */
+window.saveExpense = () => {
+  const am=Number($('ef-am')?.value);
+  if(!am){ alert('Enter amount.'); return; }
+  const dt=$('ef-dt')?.value||today();
+  S.expenses=[{id:uid(),category:$('ef-cat')?.value||'Miscellaneous',description:$('ef-desc')?.value?.trim()||'',amount:am,date:dt,fy:getFY(dt)},...S.expenses];
+  S.efForm=blankEf(); save(); render();
+};
+window.delExpense = id => { if(!confirm('Delete?'))return; S.expenses=S.expenses.filter(e=>e.id!==id); save(); render(); };
+
+/* ── SAVE PAYMENT ───────────────────────────────── */
+window.savePayment = custId => {
+  const amt=Number($('pay-am')?.value);
+  if(!amt){ alert('Enter amount.'); return; }
+  const c=S.customers.find(x=>x.id===custId); if(!c) return;
+  const dt=$('pay-dt')?.value||today();
+  const p={id:uid(),customer_id:custId,customer_name:c.name,amount:amt,date:dt,
+    method:$('pay-mt')?.value||'cash',note:$('pay-note')?.value?.trim()||'',
+    invoice_ref:$('pay-inv')?.value||'',fy:getFY(dt)};
+  S.payments=[p,...S.payments];
+  S.customers=S.customers.map(x=>x.id===custId?{...x,outstanding:Math.max(0,(x.outstanding||0)-amt)}:x);
+  S.payModal=null; save(); render();
+};
+window.delPayment = id => { if(!confirm('Delete?'))return; S.payments=S.payments.filter(p=>p.id!==id); save(); render(); };
+
+/* ── SAVE INVENTORY ITEM ────────────────────────── */
+window.saveInvItem = () => {
+  const nm=$('ii-nm')?.value?.trim();
+  if(!nm){ alert('Enter item name.'); return; }
+  const existing = S.inventory.find(i=>i.name.toLowerCase()===nm.toLowerCase());
+  const item = {
+    id:existing?.id||uid(), name:nm,
+    unit:$('ii-un')?.value||'pcs',
+    rate:Number($('ii-rt')?.value||0),
+    gst_rate:Number($('ii-gr')?.value||0),
+    stock:Number($('ii-st')?.value||0)
+  };
+  if(existing){ S.inventory=S.inventory.map(i=>i.id===existing.id?item:i); }
+  else { S.inventory=[item,...S.inventory]; }
+  S.invItemForm=blankInvItem(); save(); render();
+};
+
+window.editInvItem = id => {
+  const item=S.inventory.find(i=>i.id===id); if(!item) return;
+  S.invItemForm={...item};
+  render();
+  // Focus item name field after render
+  setTimeout(()=>{ const el=$('ii-nm'); if(el) el.focus(); }, 30);
+};
+
+window.addStock = id => {
+  const item=S.inventory.find(i=>i.id===id); if(!item) return;
+  const qty=Number(prompt(`Add stock for "${item.name}"\nCurrent: ${item.stock} ${item.unit}\nEnter quantity to add:`));
+  if(!qty||isNaN(qty)) return;
+  item.stock=Number(item.stock)+qty; save(); render();
+};
+window.delInvItem = id => { if(!confirm('Delete item?'))return; S.inventory=S.inventory.filter(i=>i.id!==id); save(); render(); };
+
+/* ── CUSTOMER HELPERS ───────────────────────────── */
+function upsertCust(name, phone, pay, amount, outstanding, dueDate) {
+  const ex=S.customers.find(c=>c.name.toLowerCase()===name.toLowerCase());
+  const outAmt = outstanding !== undefined ? outstanding : (pay==='credit'?amount:0);
+  if(ex){
+    S.customers=S.customers.map(c=>c.name.toLowerCase()===name.toLowerCase()?{
+      ...c,
+      total_business:(c.total_business||0)+amount,
+      outstanding:(c.outstanding||0)+outAmt,
+      last_date:today(),payment_method:pay,
+      phone:phone||c.phone||'',
+      due_date:dueDate||c.due_date||''
+    }:c);
+  } else {
+    S.customers=[...S.customers,{id:uid(),name,phone:phone||'',payment_method:pay,total_business:amount,outstanding:outAmt,last_date:today(),due_date:dueDate||''}];
+  }
+}
+window.delCust = id => { if(!confirm('Delete customer? Their invoices remain.'))return; S.customers=S.customers.filter(c=>c.id!==id); save(); render(); };
+
+/* ── INIT ───────────────────────────────────────── */
+if(S.dark) document.documentElement.setAttribute('data-dark','');
+render();
+</script>
+</body>
+</html>
