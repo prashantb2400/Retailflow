@@ -3764,13 +3764,7 @@ window.newInvForCust = function(custId) {
   setTimeout(()=>{ const el=document.getElementById('icust'); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } }, 80);
 };
 
-// Print from dashboard recent-invoices list
-window.doPrint = function(invId) {
-  const inv = S.invoices.find(i=>i.id===invId); if(!inv) return;
-  S.viewInv=inv;
-  const isFirm = S.firm?.billing_type==='firm';
-  if(isFirm) printFirm(); else printRetail();
-};
+// doPrint is defined earlier (async, handles QR + Blob) — no duplicate needed here
 
 /* ── CUSTOMER HELPERS ───────────────────────────── */
 function upsertCust(name, phone, pay, amount, outstanding, dueDate) {
