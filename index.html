@@ -1141,6 +1141,8 @@ const S = {
   dark: LS.get(_DARK_KEY, false),
   inv_categories: [],
   _activeProfileId: localStorage.getItem('rf_active_profile')||'default',
+  _helpOpen: false,
+  _pricingOpen: false,
   _setupNature: '',   // 'kirana'|'wholesale'|'service'|'manufacturer'|'contractor'
   _profiles: JSON.parse(localStorage.getItem('rf_profiles')||'[]'),
   mode:'invoice', page:'main', tab:'create', bizTab:'dash',
@@ -1458,6 +1460,8 @@ function render() {
   if(S.waInv)          modals += renderWAInvModal();
   if(S._editFirmOpen)  modals += renderEditFirmModal();
   if(S.custStatement) modals += renderCustomerStatement();
+  if(S._helpOpen)      modals += renderHelpModal();
+  if(S._pricingOpen)   modals += renderPricingModal();
   app.innerHTML = renderTopbar() + `<div class="wrap">` + renderMain() + `</div>` + modals;
   if(S.mode==='invoice' && S.tab==='create' && S.page==='main'){
     renderItemRows(); updateTotals(); attachCustAC();
@@ -1897,7 +1901,9 @@ function renderTopbar() {
         <button class="backup-btn" style="flex:1;justify-content:center" onclick="closeDrawer();closeFinancialYear()">📅 Close FY</button>
         <button class="backup-btn" style="flex:1;justify-content:center" onclick="closeDrawer();editFirm('print')">🖨️ Print</button>
         <a class="backup-btn" style="flex:1;justify-content:center;text-decoration:none" href="https://wa.me/?text=${encodeURIComponent('Try RetailFlow — free GST invoicing: '+APP_URL)}" target="_blank">📤 Share App</a>
+        <button class="backup-btn" style="width:100%;justify-content:center;margin-top:2px" onclick="closeDrawer();openHelp()">❓ Help & Support</button>
       </div>
+      <button class="backup-btn" style="width:100%;justify-content:center;margin-bottom:4px" onclick="closeDrawer();openPricing()">💎 Pricing & Plans</button>
       <button class="d-signout" onclick="${u?'sbSignOut()':'AUTH.offline=false;AUTH.user=null;render()'}">
         ${u?'🚪 Sign out':'🔑 Sign in / Create account'}
       </button>
@@ -2874,7 +2880,7 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   h.push('.pt-sub{font-size:9.5px;color:#7A746C;line-height:1.7}');
   /* Items table */
   h.push('table{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:9px;table-layout:fixed}');
-  h.push(`'thead tr{background:\${HDR}}'`);
+  h.push(`'thead tr{background:${HDR};-webkit-print-color-adjust:exact;print-color-adjust:exact}'`);
   h.push('th{color:#fff;padding:5px 5px;text-align:left;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.2px;overflow:hidden;word-break:break-word}');
   h.push('th.r{text-align:right}');
   h.push('td{padding:4px 5px;border-bottom:1px solid #EDE9E2;vertical-align:top;color:#1C1915;overflow:hidden;word-break:break-word}');
@@ -2893,7 +2899,7 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   h.push('.totals{width:55%;border:1px solid #DDD8CF;border-bottom:none}');
   h.push('.totals-row{display:flex;justify-content:space-between;padding:3px 10px;font-size:9.5px;color:#7A746C;border-bottom:1px solid #EDE9E2}');
   h.push('.totals-row.tax{color:#1C1915}');
-  h.push(`'.grand-row{background:\${HDR};color:#fff;display:flex;justify-content:space-between;align-items:center;padding:7px 12px}'`);
+  h.push(`'.grand-row{background:${HDR};color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border:2px solid ${HDR}}'`);
   h.push(".grand-row .gl{font-family:'Playfair Display',serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}");
   h.push(".grand-row .ga{font-family:'Playfair Display',serif;font-size:16px;font-weight:700}");
   /* Words box */
@@ -2933,7 +2939,7 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   h.push('.items-section{flex:1;display:flex;flex-direction:column}');
   h.push('.items-table-wrap{flex:1}');
   h.push('.bottom-section{margin-top:auto}');
-  h.push('@media print{body{padding:0;margin:0}@page{size:A4;margin:10mm 12mm}.frame{margin:0;min-height:calc(297mm - 20mm)}.inner{padding:10px 14px}}');
+  h.push('@media print{body{padding:0;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:10mm 12mm}.frame{margin:0;min-height:calc(297mm - 20mm)}.inner{padding:10px 14px}}');
   h.push('</style></head><body>');
   h.push('<div class="frame">');
   h.push('<div class="accent-bar"></div>');
@@ -3228,7 +3234,7 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   /* PAID/UNPAID stamps — removed */
   /* Items table */
   h.push('table{width:100%;border-collapse:collapse;margin-bottom:7px;font-size:9px;table-layout:fixed}');
-  h.push('thead tr{background:#1a2744}');
+  h.push('thead tr{background:'+HDR+';-webkit-print-color-adjust:exact;print-color-adjust:exact}');
   h.push('th{color:#fff;padding:4px 5px;text-align:left;font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.2px;overflow:hidden;word-break:break-word}');
   h.push('th.r{text-align:right}th.c{text-align:center}');
   h.push('td{padding:3px 5px;border-bottom:1px solid #EDE9E2;vertical-align:top;overflow:hidden;word-break:break-word}');
@@ -3247,7 +3253,7 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   h.push('.totals{width:55%;border:1px solid #DDD8CF;border-bottom:none}');
   h.push('.totals-row{display:flex;justify-content:space-between;padding:3px 10px;font-size:9px;color:#7A746C;border-bottom:1px solid #EDE9E2}');
   h.push('.totals-row.tax{color:#1C1915}');
-  h.push('.grand-row{background:'+HDR+';color:#fff;display:flex;justify-content:space-between;align-items:center;padding:7px 12px}');
+  h.push('.grand-row{background:'+HDR+';color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border:2px solid '+HDR+'}');
   h.push(".grand-row .gl{font-family:'Playfair Display',serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}");
   h.push(".grand-row .ga{font-family:'Playfair Display',serif;font-size:16px;font-weight:700}");
   /* Words */
@@ -3274,7 +3280,7 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   h.push('.items-section{flex:1;display:flex;flex-direction:column}');
   h.push('.items-table-wrap{flex:1}');
   h.push('.bottom-section{margin-top:auto}');
-  h.push('@media print{body{padding:0;margin:0}@page{size:A4;margin:10mm 12mm}.page-body{min-height:calc(297mm - 20mm)}}');
+  h.push('@media print{body{padding:0;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:10mm 12mm}.page-body{min-height:calc(297mm - 20mm)}}');
   h.push('</style></head><body>');
   h.push('<div class="page-body">');
 
@@ -3387,7 +3393,7 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   var stColspan = 5 + (hasDisc?1:0) + (isReg?(isIGST?3:4):0);
   h.push('</tbody><tfoot><tr>');
   h.push('<td colspan="' + stColspan + '" class="r" style="font-size:8px;letter-spacing:.2px">Sub-Total</td>');
-  h.push('<td class="r">₹' + fmt(itemSubtotal) + '</td>');
+  h.push('<td class="r">' + fmt(itemSubtotal) + '</td>');
   h.push('</tr></tfoot></table>');
 
   // ── GST Summary Table ────────────────────────────
@@ -3701,6 +3707,7 @@ function renderBusiness() {
     ['txn','📦 Transactions'],
     ['money',`💰 Money${cC.length>0?' ('+cC.length+')':''}`],
     ['reports','📈 Reports'],
+    ['ca','🧾 CA Reports'],
   ];
   return `<div class="sh">
     <div><div class="st">Business</div><div class="sb">Revenue ${fmt(tS)} · Profit ${fmt(r2(tS-tP-tE))}</div></div>
@@ -3714,6 +3721,7 @@ function renderBusiness() {
     txn:    ()=>renderTransactions(tP,tE),
     money:  ()=>renderMoney(cC,tC),
     reports:()=>renderReports(tS,tP,tE),
+    ca:     ()=>renderCAReports(),
   }[S.bizTab]?.() || renderDash(tS,tP,tE)}`;
 
 function renderDash(tS,tP,tE){
@@ -4788,6 +4796,341 @@ function renderGST(){
   }).join('')}`;
 }
 
+/* ══════════════════════════════════════════════════
+   CA REPORTS
+══════════════════════════════════════════════════ */
+function renderCAReports() {
+  const f = S.firm;
+  const fy = S.fyFilter === 'all' ? null : S.fyFilter;
+  const fyLabel2 = fy ? `FY ${fy}` : 'All Time';
+
+  const invs  = S.invoices.filter(i=>!fy||i.fy===fy);
+  const prchs = S.purchases.filter(p=>!fy||p.fy===fy);
+  const exps  = S.expenses.filter(e=>!fy||e.fy===fy);
+  const pays  = S.payments.filter(p=>!fy||p.fy===fy);
+
+  // ── P&L figures ──────────────────────────────────
+  const totalRev   = r2(invs.reduce((a,i)=>a+Number(i.total||0),0));
+  const totalPurch = r2(prchs.reduce((a,p)=>a+Number(p.amount||0),0));
+  const totalExp   = r2(exps.reduce((a,e)=>a+Number(e.amount||0),0));
+  const totalCost  = r2(totalPurch + totalExp);
+  const grossProfit= r2(totalRev - totalPurch);
+  const netProfit  = r2(totalRev - totalCost);
+  const margin     = totalRev > 0 ? r2((netProfit/totalRev)*100) : 0;
+
+  // ── GST figures ───────────────────────────────────
+  const outputGST  = r2(invs.reduce((a,i)=>{const t=buildInvTotals(i.items||[],true);return a+t.totalGST;},0));
+  const inputGST   = r2(prchs.reduce((a,p)=>a+r2(Number(p.amount||0)*Number(p.gst_rate||18)/100),0));
+  const netGST     = r2(Math.max(0, outputGST - inputGST));
+  const taxableRev = r2(invs.reduce((a,i)=>{const t=buildInvTotals(i.items||[],true);return a+t.totalTaxable;},0));
+
+  // ── Outstanding ───────────────────────────────────
+  const totalOutstanding = r2(S.customers.reduce((a,c)=>a+Number(c.outstanding||0),0));
+  const unpaidInvs = invs.filter(i=>i.status==='unpaid'||i.status==='partial');
+  const totalUnpaid= r2(unpaidInvs.reduce((a,i)=>a+Number(i.total||0),0));
+
+  // ── TDS summary ───────────────────────────────────
+  const tdsInvs = invs.filter(i=>Number(i.tcs_rate||0)>0);
+  const totalTDS = r2(tdsInvs.reduce((a,i)=>{
+    const t=buildInvTotals(i.items||[],true,false,{tcs_rate:i.tcs_rate||0});
+    return a+(t.tcsAmt||0);
+  },0));
+
+  // ── Expense breakdown ─────────────────────────────
+  const expByCat = {};
+  exps.forEach(e=>{ expByCat[e.category]=(expByCat[e.category]||0)+Number(e.amount||0); });
+  const topExps = Object.entries(expByCat).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+  const allFYs = [...new Set(S.invoices.map(i=>i.fy).filter(Boolean))].sort().reverse();
+
+  return `
+  <div class="sh">
+    <div><div class="st">CA Reports</div><div class="sb">${esc(f.firm_name)} · ${f.gstin?`GSTIN: ${f.gstin} · `:''}${fyLabel2}</div></div>
+    <div class="row" style="gap:8px">
+      <select onchange="setFY(this.value)" style="padding:6px 10px;border:1.5px solid var(--bor);border-radius:8px;background:var(--surf2);color:var(--tx);font-size:12px;outline:none">
+        <option value="all">All Financial Years</option>
+        ${allFYs.map(y=>`<option value="${y}"${S.fyFilter===y?' selected':''}>${fyLabel(y)}</option>`).join('')}
+      </select>
+      <button class="btn bgho bsm" onclick="shareCAReport()">📤 Share with CA</button>
+    </div>
+  </div>
+
+  <!-- Summary banner -->
+  <div class="card mb14" style="background:linear-gradient(135deg,var(--acc),#E07A5F);color:#fff;border:none">
+    <div style="font-size:11px;font-weight:700;opacity:.8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">${fyLabel2} At a Glance</div>
+    <div class="g4">
+      <div><div style="font-size:10px;opacity:.8">Revenue</div><div style="font-family:var(--ffd);font-size:20px;font-weight:700">${fmt(totalRev)}</div></div>
+      <div><div style="font-size:10px;opacity:.8">Net Profit</div><div style="font-family:var(--ffd);font-size:20px;font-weight:700">${fmt(netProfit)}</div><div style="font-size:10px;opacity:.8">${margin}% margin</div></div>
+      <div><div style="font-size:10px;opacity:.8">Output GST</div><div style="font-family:var(--ffd);font-size:20px;font-weight:700">${fmt(outputGST)}</div></div>
+      <div><div style="font-size:10px;opacity:.8">Outstanding</div><div style="font-family:var(--ffd);font-size:20px;font-weight:700">${fmt(totalOutstanding)}</div></div>
+    </div>
+  </div>
+
+  <!-- P&L Statement -->
+  <div class="card mb14">
+    <div class="ctitle mb12">📊 Profit & Loss Statement</div>
+    <div class="twrap"><table style="font-size:12px">
+      <thead><tr><th>Particulars</th><th style="text-align:right">Amount</th></tr></thead>
+      <tbody>
+        <tr style="background:var(--gnb)"><td colspan="2" style="font-weight:700;font-size:11px;padding:6px 10px;text-transform:uppercase;letter-spacing:.3px;color:var(--grn)">Income</td></tr>
+        <tr><td style="padding-left:20px">Sales / Invoice Revenue</td><td style="text-align:right;font-weight:600">${fmt(totalRev)}</td></tr>
+        <tr style="background:var(--surf2)"><td style="font-weight:700">Gross Revenue</td><td style="text-align:right;font-weight:700;color:var(--grn)">${fmt(totalRev)}</td></tr>
+        <tr style="background:var(--rdb)"><td colspan="2" style="font-weight:700;font-size:11px;padding:6px 10px;text-transform:uppercase;letter-spacing:.3px;color:var(--red)">Expenses</td></tr>
+        <tr><td style="padding-left:20px">Purchases</td><td style="text-align:right">${fmt(totalPurch)}</td></tr>
+        ${topExps.map(([cat,amt])=>`<tr><td style="padding-left:20px">${esc(cat)}</td><td style="text-align:right">${fmt(r2(amt))}</td></tr>`).join('')}
+        ${topExps.length<Object.keys(expByCat).length?`<tr><td style="padding-left:20px;color:var(--tx2)">Other expenses</td><td style="text-align:right;color:var(--tx2)">${fmt(r2(totalExp-topExps.reduce((a,[,v])=>a+v,0)))}</td></tr>`:''}
+        <tr style="background:var(--surf2)"><td style="font-weight:700">Total Expenses</td><td style="text-align:right;font-weight:700;color:var(--red)">${fmt(totalCost)}</td></tr>
+        <tr style="border-top:2px solid var(--bor)"><td style="font-weight:700">Gross Profit</td><td style="text-align:right;font-weight:700;color:${grossProfit>=0?'var(--grn)':'var(--red)'}">${fmt(grossProfit)}</td></tr>
+        <tr style="border-top:2px solid var(--bor);font-size:13px"><td style="font-weight:700">Net Profit / (Loss)</td><td style="text-align:right;font-weight:700;font-size:14px;color:${netProfit>=0?'var(--grn)':'var(--red)'}">${fmt(netProfit)}</td></tr>
+        <tr><td style="color:var(--tx2)">Net Margin</td><td style="text-align:right;color:var(--tx2)">${margin}%</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- GST Summary -->
+  ${f.gst_registered?`
+  <div class="card mb14">
+    <div class="ctitle mb12">📋 GST Summary (for GSTR-1 & GSTR-3B)</div>
+    <div class="twrap"><table style="font-size:12px">
+      <thead><tr><th>Particulars</th><th style="text-align:right">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Taxable Turnover</td><td style="text-align:right;font-weight:600">${fmt(taxableRev)}</td></tr>
+        <tr><td>Output GST (Total)</td><td style="text-align:right;font-weight:600;color:var(--red)">${fmt(outputGST)}</td></tr>
+        <tr><td style="padding-left:20px;color:var(--tx2)">CGST</td><td style="text-align:right;color:var(--tx2)">${fmt(r2(outputGST/2))}</td></tr>
+        <tr><td style="padding-left:20px;color:var(--tx2)">SGST</td><td style="text-align:right;color:var(--tx2)">${fmt(r2(outputGST/2))}</td></tr>
+        <tr><td>Input Tax Credit (Est.)</td><td style="text-align:right;color:var(--grn)">${fmt(inputGST)}</td></tr>
+        <tr style="border-top:2px solid var(--bor)"><td style="font-weight:700">Net GST Payable</td><td style="text-align:right;font-weight:700;color:var(--red)">${fmt(netGST)}</td></tr>
+        ${totalTDS>0?`<tr><td>TDS Deducted by Buyers</td><td style="text-align:right;color:var(--tx2)">${fmt(totalTDS)}</td></tr>`:''}
+      </tbody>
+    </table></div>
+    <div class="fs11 tx2 mt8">⚠️ Input tax credit is an estimate. Verify against GSTR-2B before filing.</div>
+  </div>`:''}
+
+  <!-- Outstanding / Debtors -->
+  <div class="card mb14">
+    <div class="ctitle mb12">💰 Debtors & Outstanding</div>
+    <div class="g2 mb12">
+      <div class="sc"><div class="sl">Total Outstanding</div><div class="sv txred">${fmt(totalOutstanding)}</div><div class="ss">Across all customers</div></div>
+      <div class="sc"><div class="sl">Unpaid Invoices</div><div class="sv txred">${fmt(totalUnpaid)}</div><div class="ss">${unpaidInvs.length} invoice${unpaidInvs.length!==1?'s':''}</div></div>
+    </div>
+    ${S.customers.filter(c=>Number(c.outstanding||0)>0).sort((a,b)=>b.outstanding-a.outstanding).slice(0,8).length>0?`
+    <div class="twrap"><table style="font-size:11px">
+      <thead><tr><th>Customer</th><th>Phone</th><th style="text-align:right">Outstanding</th><th>Since</th></tr></thead>
+      <tbody>
+        ${S.customers.filter(c=>Number(c.outstanding||0)>0).sort((a,b)=>b.outstanding-a.outstanding).slice(0,8).map(c=>`
+          <tr>
+            <td class="fw6">${esc(c.name)}</td>
+            <td class="tx2 fs10">${esc(c.phone||'—')}</td>
+            <td style="text-align:right;color:var(--red);font-weight:600">${fmt(c.outstanding)}</td>
+            <td class="tx2 fs10">${c.due_date?fmtDate(c.due_date):'—'}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table></div>`:'<div class="tx2 fs12">No outstanding dues — all clear ✓</div>'}
+  </div>
+
+  <!-- Export buttons -->
+  <div class="card mb14">
+    <div class="ctitle mb12">⬇️ Download Reports</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button class="btn bgho" style="justify-content:center;flex-direction:column;height:56px;gap:2px" onclick="exportCSV('gst')">
+        <span style="font-size:16px">📋</span>
+        <span style="font-size:11px">GSTR-1 CSV</span>
+      </button>
+      <button class="btn bgho" style="justify-content:center;flex-direction:column;height:56px;gap:2px" onclick="exportCSV('invoices')">
+        <span style="font-size:16px">🧾</span>
+        <span style="font-size:11px">Invoices CSV</span>
+      </button>
+      <button class="btn bgho" style="justify-content:center;flex-direction:column;height:56px;gap:2px" onclick="exportCSV('purchases')">
+        <span style="font-size:16px">📦</span>
+        <span style="font-size:11px">Purchases CSV</span>
+      </button>
+      <button class="btn bgho" style="justify-content:center;flex-direction:column;height:56px;gap:2px" onclick="exportCSV('expenses')">
+        <span style="font-size:16px">💸</span>
+        <span style="font-size:11px">Expenses CSV</span>
+      </button>
+      <button class="btn bgho" style="justify-content:center;flex-direction:column;height:56px;gap:2px" onclick="exportCSV('all')">
+        <span style="font-size:16px">📂</span>
+        <span style="font-size:11px">All Data CSV</span>
+      </button>
+      <button class="btn bgho" style="justify-content:center;flex-direction:column;height:56px;gap:2px" onclick="exportCAStatementPDF()">
+        <span style="font-size:16px">📄</span>
+        <span style="font-size:11px">P&L Statement</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Share with CA -->
+  <div class="card mb14">
+    <div class="ctitle mb8">📤 Share with Your CA</div>
+    <div class="fs12 tx2 mb12">Send a summary of your books directly to your Chartered Accountant via WhatsApp.</div>
+    <div class="g2">
+      <div class="fld">
+        <label>CA Name</label>
+        <input id="ca-name" placeholder="CA Ramesh Kumar" value="${esc(S.firm.ca_name||'')}">
+      </div>
+      <div class="fld">
+        <label>CA Phone</label>
+        <input id="ca-phone" placeholder="9999999999" type="tel" value="${esc(S.firm.ca_phone||'')}">
+      </div>
+    </div>
+    <button class="btn bpri wfull mt8" onclick="shareCAReport()">💬 Send to CA on WhatsApp</button>
+    <button class="btn bgho wfull mt6" onclick="copyCAReport()">📋 Copy Report Text</button>
+  </div>`;
+}
+
+/* ── CA Report share ── */
+window.shareCAReport = function() {
+  // Save CA details
+  const name  = document.getElementById('ca-name')?.value?.trim();
+  const phone = document.getElementById('ca-phone')?.value?.trim();
+  if(name) S.firm.ca_name = name;
+  if(phone) S.firm.ca_phone = phone;
+  if(name||phone) save();
+
+  const msg = buildCAReportText();
+  if(!phone && !S.firm.ca_phone){ toast('Enter CA phone number first','warn'); return; }
+  const n = (phone||S.firm.ca_phone).replace(/\D/g,'');
+  const num = n.startsWith('91') ? n : '91'+n;
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
+};
+
+window.copyCAReport = function() {
+  const msg = buildCAReportText();
+  navigator.clipboard.writeText(msg).then(()=>toast('Report copied to clipboard','success')).catch(()=>{
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = msg; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('Report copied','success');
+  });
+};
+
+function buildCAReportText() {
+  const f = S.firm;
+  const fy = S.fyFilter === 'all' ? null : S.fyFilter;
+  const fyLabel2 = fy ? `FY ${fy}` : 'All Time';
+
+  const invs  = S.invoices.filter(i=>!fy||i.fy===fy);
+  const prchs = S.purchases.filter(p=>!fy||p.fy===fy);
+  const exps  = S.expenses.filter(e=>!fy||e.fy===fy);
+
+  const totalRev   = r2(invs.reduce((a,i)=>a+Number(i.total||0),0));
+  const totalPurch = r2(prchs.reduce((a,p)=>a+Number(p.amount||0),0));
+  const totalExp   = r2(exps.reduce((a,e)=>a+Number(e.amount||0),0));
+  const netProfit  = r2(totalRev - totalPurch - totalExp);
+  const outputGST  = r2(invs.reduce((a,i)=>{const t=buildInvTotals(i.items||[],true);return a+t.totalGST;},0));
+  const inputGST   = r2(prchs.reduce((a,p)=>a+r2(Number(p.amount||0)*Number(p.gst_rate||18)/100),0));
+  const outstanding= r2(S.customers.reduce((a,c)=>a+Number(c.outstanding||0),0));
+
+  const caName = S.firm.ca_name ? `Namaste ${S.firm.ca_name} Ji 🙏` : 'Namaste CA Sahab 🙏';
+
+  return `${caName}
+
+Please find the summary of *${esc(f.firm_name)}* for *${fyLabel2}*:
+
+📊 *PROFIT & LOSS*
+• Revenue: ₹${fmt(totalRev)} (${invs.length} invoices)
+• Purchases: ₹${fmt(totalPurch)}
+• Expenses: ₹${fmt(totalExp)}
+• *Net Profit: ₹${fmt(netProfit)}*
+
+${f.gst_registered?`📋 *GST SUMMARY*
+• GSTIN: ${f.gstin||'—'}
+• Output GST: ₹${fmt(outputGST)}
+• Input Tax Credit (Est.): ₹${fmt(inputGST)}
+• *Net GST Payable: ₹${fmt(Math.max(0,r2(outputGST-inputGST)))}*
+
+`:''}💰 *OUTSTANDING*
+• Total Dues: ₹${fmt(outstanding)} from ${S.customers.filter(c=>Number(c.outstanding||0)>0).length} customer${S.customers.filter(c=>Number(c.outstanding||0)>0).length!==1?'s':''}
+
+Data from *RetailFlow* · ${APP_URL}
+Please let me know if you need detailed CSVs or any clarification.
+
+Thanks & Regards
+*${esc(f.proprietor||f.firm_name)}*
+${f.phone?`📞 ${f.phone}`:''}`.trim();
+}
+
+/* ── Export P&L as printable HTML ── */
+window.exportCAStatementPDF = function() {
+  const f = S.firm;
+  const fy = S.fyFilter === 'all' ? null : S.fyFilter;
+  const fyLabel2 = fy ? `FY ${fy}` : 'All Time';
+  const invs  = S.invoices.filter(i=>!fy||i.fy===fy);
+  const prchs = S.purchases.filter(p=>!fy||p.fy===fy);
+  const exps  = S.expenses.filter(e=>!fy||e.fy===fy);
+
+  const totalRev   = r2(invs.reduce((a,i)=>a+Number(i.total||0),0));
+  const totalPurch = r2(prchs.reduce((a,p)=>a+Number(p.amount||0),0));
+  const totalExp   = r2(exps.reduce((a,e)=>a+Number(e.amount||0),0));
+  const netProfit  = r2(totalRev - totalPurch - totalExp);
+  const outputGST  = r2(invs.reduce((a,i)=>{const t=buildInvTotals(i.items||[],true);return a+t.totalGST;},0));
+  const inputGST   = r2(prchs.reduce((a,p)=>a+r2(Number(p.amount||0)*Number(p.gst_rate||18)/100),0));
+  const outstanding= r2(S.customers.reduce((a,c)=>a+Number(c.outstanding||0),0));
+
+  const expByCat = {};
+  exps.forEach(e=>{ expByCat[e.category]=(expByCat[e.category]||0)+Number(e.amount||0); });
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>P&L Statement — ${esc(f.firm_name)}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',sans-serif;padding:20mm 18mm;color:#1C1915;font-size:11px;max-width:794px;margin:0 auto}
+    h1{font-size:22px;color:#BF4A2B;margin-bottom:4px}
+    .sub{font-size:11px;color:#7A746C;margin-bottom:20px}
+    table{width:100%;border-collapse:collapse;margin-bottom:16px}
+    th{background:#1a2744;color:#fff;padding:7px 10px;text-align:left;font-size:10px}
+    th.r{text-align:right}
+    td{padding:6px 10px;border-bottom:1px solid #EDE9E2;font-size:11px}
+    td.r{text-align:right}
+    .total-row td{font-weight:700;border-top:2px solid #DDD8CF;background:#F6F3EE}
+    .section-label td{background:#F6F3EE;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.3px;color:#7A746C;padding:5px 10px}
+    .profit{color:#2B6E4A;font-size:14px}
+    .loss{color:#BF4A2B}
+    @media print{@page{size:A4;margin:10mm 12mm}body{padding:0}}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body>
+  <h1>${esc(f.firm_name)}</h1>
+  <div class="sub">${f.gstin?`GSTIN: ${f.gstin} · `:''}${f.address||''} · ${fyLabel2}</div>
+  <table>
+    <thead><tr><th>Particulars</th><th class="r">Amount (₹)</th></tr></thead>
+    <tbody>
+      <tr class="section-label"><td colspan="2">Income</td></tr>
+      <tr><td style="padding-left:20px">Sales Revenue</td><td class="r">${fmt(totalRev)}</td></tr>
+      <tr class="total-row"><td>Gross Revenue</td><td class="r">${fmt(totalRev)}</td></tr>
+      <tr class="section-label"><td colspan="2">Expenses</td></tr>
+      <tr><td style="padding-left:20px">Purchases</td><td class="r">${fmt(totalPurch)}</td></tr>
+      ${Object.entries(expByCat).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>`<tr><td style="padding-left:20px">${esc(cat)}</td><td class="r">${fmt(r2(amt))}</td></tr>`).join('')}
+      <tr class="total-row"><td>Total Expenses</td><td class="r">${fmt(totalPurch+totalExp)}</td></tr>
+      <tr class="total-row"><td class="${netProfit>=0?'profit':'loss'}">Net Profit${netProfit<0?' / (Loss)':''}</td><td class="r ${netProfit>=0?'profit':'loss'}">${fmt(netProfit)}</td></tr>
+    </tbody>
+  </table>
+  ${f.gst_registered?`<table>
+    <thead><tr><th>GST Summary</th><th class="r">Amount (₹)</th></tr></thead>
+    <tbody>
+      <tr><td>Output GST</td><td class="r">${fmt(outputGST)}</td></tr>
+      <tr><td>Input Tax Credit (Est.)</td><td class="r">${fmt(inputGST)}</td></tr>
+      <tr class="total-row"><td>Net GST Payable</td><td class="r">${fmt(Math.max(0,r2(outputGST-inputGST)))}</td></tr>
+    </tbody>
+  </table>`:''}
+  <table>
+    <thead><tr><th>Outstanding Debtors</th><th class="r">Amount (₹)</th></tr></thead>
+    <tbody>
+      ${S.customers.filter(c=>Number(c.outstanding||0)>0).sort((a,b)=>b.outstanding-a.outstanding).map(c=>`<tr><td>${esc(c.name)}</td><td class="r">${fmt(c.outstanding)}</td></tr>`).join('')||'<tr><td colspan="2" style="color:#7A746C">No outstanding dues</td></tr>'}
+      <tr class="total-row"><td>Total Outstanding</td><td class="r">${fmt(outstanding)}</td></tr>
+    </tbody>
+  </table>
+  <div style="font-size:9px;color:#aaa;margin-top:20px;border-top:1px solid #EDE9E2;padding-top:8px">
+    Generated by RetailFlow · ${APP_URL} · ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}
+  </div>
+  <script>window.onload=function(){window.print();}<\/script>
+  </body></html>`;
+
+  const w = window.open('','_blank');
+  if(w){ w.document.write(html); w.document.close(); }
+  else toast('Allow popups to open the PDF','warn');
+};
+
 function mergeGSTSummary(a,b){
   const out={...a};
   Object.entries(b).forEach(([r,d])=>{
@@ -5614,6 +5957,193 @@ window.previewPrintSettings = function() {
   };
   doPrint(null, sampleInv);
 };
+
+/* ── Help & Support ── */
+window.openHelp  = () => { S._helpOpen=true; render(); };
+window.closeHelp = () => { S._helpOpen=false; render(); };
+
+function renderHelpModal() {
+  const faqs = [
+    ['How do I create my first invoice?',
+      'Go to Invoice tab → tap New Invoice. Fill customer name, add items with price and GST rate, then tap Save. Your invoice is ready to print or share on WhatsApp.'],
+    ['How do I add GST to items?',
+      'When adding an item to an invoice, set the GST Rate field (5%, 12%, 18%, 28%). RetailFlow calculates CGST and SGST automatically. Make sure your firm is marked as GST Registered in Settings.'],
+    ['Can I use this without internet?',
+      'Yes. RetailFlow works fully offline. All data is saved on your device. Cloud sync is optional and works when you are connected.'],
+    ['How do I share an invoice on WhatsApp?',
+      'After saving an invoice, tap the WhatsApp button in the action sheet or on the invoice view. It opens a pre-filled message with invoice details.'],
+    ['How do I backup my data?',
+      'Open the drawer (hamburger menu) → Backup. A JSON file downloads to your device. Keep this safe — it contains all your invoices and business data.'],
+    ['How do I restore from a backup?',
+      'Open the drawer → Restore. Select your backup JSON file. Your data loads immediately.'],
+    ['How do I switch between businesses?',
+      'Tap your business name in the topbar → Add Business or select an existing one. Each business has completely separate data.'],
+    ['Can my CA access the data?',
+      'Yes. Go to Business → CA Reports. You can send a summary to your CA via WhatsApp, or download CSV files for GSTR-1, Purchases, Expenses, and a full P&L statement.'],
+    ['Why is my invoice number jumping?',
+      'Invoice numbers increment automatically. If you deleted invoices or restored from backup, the counter may have gaps. You can reset the prefix and start number in Settings → Business.'],
+    ['How do I record a partial payment?',
+      'When creating an invoice, set Payment Type to Credit, then enable Partial Payment and enter the amount received. The remaining balance shows as outstanding.'],
+  ];
+
+  return `<div class="mover" onclick="closeHelp()">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:560px;max-height:92vh;overflow-y:auto">
+      <div class="row jbet mb14">
+        <div class="mtit">❓ Help & Support</div>
+        <button class="ibtn" onclick="closeHelp()">✕</button>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="g2 mb14">
+        <a class="card" href="https://wa.me/919999999999?text=Hi%2C%20I%20need%20help%20with%20RetailFlow" target="_blank"
+          style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:14px">
+          <span style="font-size:28px">💬</span>
+          <div>
+            <div class="fw6 fs13">Chat on WhatsApp</div>
+            <div class="fs11 tx2">Fastest response · usually within 1 hour</div>
+          </div>
+        </a>
+        <a class="card" href="mailto:support@retailflow.in" target="_blank"
+          style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:14px">
+          <span style="font-size:28px">📧</span>
+          <div>
+            <div class="fw6 fs13">Email Support</div>
+            <div class="fs11 tx2">support@retailflow.in · reply within 24h</div>
+          </div>
+        </a>
+      </div>
+
+      <!-- App info -->
+      <div class="card mb14" style="background:var(--surf2)">
+        <div class="g2" style="font-size:11px;color:var(--tx2)">
+          <div>App: <b style="color:var(--tx)">RetailFlow v3</b></div>
+          <div>Firm: <b style="color:var(--tx)">${esc(S.firm?.firm_name||'—')}</b></div>
+          <div>Invoices: <b style="color:var(--tx)">${S.invoices.length}</b></div>
+          <div>Customers: <b style="color:var(--tx)">${S.customers.length}</b></div>
+        </div>
+      </div>
+
+      <!-- FAQ -->
+      <div class="fs12 fw6 mb10" style="text-transform:uppercase;letter-spacing:.5px;color:var(--tx2)">Frequently Asked Questions</div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        ${faqs.map(([q,a],i)=>`
+          <div style="border:1.5px solid var(--bor);border-radius:11px;overflow:hidden;margin-bottom:4px">
+            <div onclick="toggleSection('faq-${i}')" style="padding:12px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--surf)">
+              <div class="fw6 fs12">${q}</div>
+              <span style="color:var(--tx2);flex-shrink:0;margin-left:8px">▾</span>
+            </div>
+            <div id="faq-${i}" style="display:none;padding:10px 14px;font-size:12px;color:var(--tx2);line-height:1.6;background:var(--surf2);border-top:1px solid var(--bor)">
+              ${a}
+            </div>
+          </div>`).join('')}
+      </div>
+
+      <div class="row jbet mt14">
+        <button class="btn bgho" onclick="closeHelp()">Close</button>
+        <button class="btn bgho" onclick="closeHelp();S._pricingOpen=true;render()">💎 View Pricing</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── Pricing Modal ── */
+window.openPricing  = () => { S._pricingOpen=true; render(); };
+window.closePricing = () => { S._pricingOpen=false; render(); };
+
+function renderPricingModal() {
+  const plans = [
+    {
+      name: 'Free',
+      price: '₹0',
+      period: 'forever',
+      color: 'var(--tx2)',
+      badge: '',
+      features: [
+        '✓ Unlimited invoices',
+        '✓ GST invoices',
+        '✓ WhatsApp sharing',
+        '✓ Thermal receipts',
+        '✓ Customer management',
+        '✓ Stock / Inventory',
+        '✓ GSTR-1 export',
+        '✓ Works offline',
+        '✗ Cloud sync',
+        '✗ Multiple businesses',
+        '✗ CA Reports',
+        '✗ "Made with RetailFlow" hidden',
+      ],
+      cta: 'Current Plan',
+      ctaStyle: 'btn bgho',
+      action: '',
+    },
+    {
+      name: 'Pro',
+      price: '₹299',
+      period: 'per month',
+      color: 'var(--acc)',
+      badge: '⭐ Most Popular',
+      features: [
+        '✓ Everything in Free',
+        '✓ Cloud sync (multi-device)',
+        '✓ Up to 3 businesses',
+        '✓ CA Reports & P&L PDF',
+        '✓ Priority WhatsApp support',
+        '✓ Remove "Powered by" footer',
+        '✓ Custom invoice colors',
+        '✓ Backup auto-daily',
+      ],
+      cta: 'Start Free Trial',
+      ctaStyle: 'btn bpri',
+      action: "window.open('https://wa.me/919999999999?text=Hi%2C+I+want+to+upgrade+to+RetailFlow+Pro','_blank')",
+    },
+  ];
+
+  return `<div class="mover" onclick="closePricing()">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:540px;max-height:92vh;overflow-y:auto">
+      <div class="row jbet mb14">
+        <div class="mtit">💎 RetailFlow Pricing</div>
+        <button class="ibtn" onclick="closePricing()">✕</button>
+      </div>
+
+      <div style="text-align:center;margin-bottom:20px">
+        <div class="fs14 fw6 mb4">Simple, honest pricing</div>
+        <div class="fs12 tx2">No hidden charges. Cancel anytime. Data always yours.</div>
+      </div>
+
+      <div class="g2 mb14">
+        ${plans.map(p=>`
+          <div class="card" style="border:2px solid ${p.color};position:relative;padding:18px">
+            ${p.badge?`<div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--acc);color:#fff;font-size:10px;font-weight:700;padding:3px 12px;border-radius:99px;white-space:nowrap">${p.badge}</div>`:''}
+            <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">${p.name}</div>
+            <div style="font-family:var(--ffd);font-size:28px;font-weight:700;color:${p.color}">${p.price}</div>
+            <div style="font-size:10px;color:var(--tx2);margin-bottom:14px">${p.period}</div>
+            <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
+              ${p.features.map(f=>`<div style="font-size:11px;color:${f.startsWith('✗')?'var(--tx2)':'var(--tx)'}">${f}</div>`).join('')}
+            </div>
+            <button class="${p.ctaStyle} wfull" style="justify-content:center" ${p.action?`onclick="${p.action}"`:''} ${!p.action?'disabled':''}>
+              ${p.cta}
+            </button>
+          </div>`).join('')}
+      </div>
+
+      <div class="card mb14" style="background:var(--surf2);text-align:center">
+        <div class="fs12 fw6 mb4">🤝 Annual Plan</div>
+        <div class="fs12 tx2">Pay for 10 months, get 12. <b style="color:var(--acc)">₹2,990/year</b> — save ₹600.</div>
+        <button class="btn bpri mt8" onclick="window.open('https://wa.me/919999999999?text=Hi%2C+I+want+the+annual+RetailFlow+Pro+plan','_blank')">
+          Get Annual Plan
+        </button>
+      </div>
+
+      <div class="fs11 tx2" style="text-align:center">
+        Questions? <a href="https://wa.me/919999999999" target="_blank" style="color:var(--acc)">WhatsApp us →</a>
+      </div>
+
+      <div class="row jbet mt14">
+        <button class="btn bgho" onclick="closePricing()">Close</button>
+      </div>
+    </div>
+  </div>`;
+}
 
 window.openRem     = id => { S.reminder=S.customers.find(c=>c.id===id)||null; render(); };
 window.closeRem    = () => { S.reminder=null; render(); };
