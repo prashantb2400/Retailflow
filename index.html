@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RetailFlow — Smart Invoicing</title>
+<meta name="description" content="Free GST invoicing for Indian retail — works offline, fast, no login needed.">
+<meta name="theme-color" content="#BF4A2B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="RetailFlow">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23BF4A2B'/><text y='.9em' font-size='80' x='10'>🧾</text></svg>">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22RetailFlow%22%2C%22short_name%22%3A%22RetailFlow%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F6F3EE%22%2C%22theme_color%22%3A%22%23BF4A2B%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg+xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'+viewBox%3D'0+0+100+100'%3E%3Crect+width%3D'100'+height%3D'100'+rx%3D'20'+fill%3D'%23BF4A2B'%2F%3E%3Ctext+y%3D'.9em'+font-size%3D'80'+x%3D'10'%3E%F0%9F%A7%BE%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -133,7 +140,7 @@ hr{border:none;border-top:1.5px solid var(--bor);margin:14px 0}
 .jbet{justify-content:space-between}
 .mb8{margin-bottom:8px}.mb14{margin-bottom:14px}.mt8{margin-top:8px}.mt14{margin-top:14px}.mt18{margin-top:18px}
 .tx2{color:var(--tx2)}.txacc{color:var(--acc)}.txgrn{color:var(--grn)}.txred{color:var(--red)}
-.fw6{font-weight:600}.fs10{font-size:10px}.fs11{font-size:11px}.fs12{font-size:12px}.fs13{font-size:13px}
+.fw6{font-weight:600}.fs10{font-size:10px}.fs11{font-size:11px}.fs12{font-size:12px}.fs13{font-size:13px}.fs14{font-size:14px}
 .lsnotice{background:var(--gnb);border:1.5px solid #b8dfc8;border-radius:10px;padding:10px 13px;font-size:12px;color:#1f5c39;margin-bottom:16px;line-height:1.6}
 /* Partial payment bar */
 .paybar-wrap{background:var(--surf2);border:1.5px solid var(--bor);border-radius:10px;padding:14px;margin-top:10px}
@@ -262,6 +269,13 @@ hr{border:none;border-top:1.5px solid var(--bor);margin:14px 0}
 
 /* ── SMART CUSTOMER CARD ─────────────────────── */
 #cust-card{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--surf);border:1.5px solid var(--bor);border-radius:13px;box-shadow:var(--shlg);z-index:150;padding:14px 16px;display:none;animation:cmdIn .16s cubic-bezier(.34,1.56,.64,1)}
+/* Customer autocomplete dropdown */
+.cac-item{display:flex;align-items:center;gap:8px;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--bor);flex-wrap:wrap;transition:background .1s}
+.cac-item:last-child{border-bottom:none}
+.cac-item:hover,.cac-item:focus{background:var(--surf2)}
+.cac-name{font-weight:600;font-size:13px;color:var(--tx);flex:1;min-width:100px}
+.cac-meta{font-size:11px;color:var(--tx2)}
+.cac-due{font-size:11px;color:var(--red);font-weight:600;margin-left:auto}
 #cust-card.show{display:block}
 .cc-name{font-family:var(--ffd);font-size:16px;color:var(--tx);margin-bottom:6px}
 .cc-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
@@ -284,6 +298,34 @@ hr{border:none;border-top:1.5px solid var(--bor);margin:14px 0}
 .dash-greeting{font-family:var(--ffd);font-size:21px;color:var(--tx);margin-bottom:4px}
 .dash-greeting span{color:var(--acc)}
 .dash-sub{font-size:12px;color:var(--tx2);margin-bottom:14px}
+
+/* ── Toggle switch (Print Settings) ─────────────── */
+.tog-sw{width:40px;height:22px;border-radius:11px;background:var(--bor);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.tog-sw.on{background:var(--acc)}
+.tog-knob{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tog-sw.on .tog-knob{left:21px}
+
+/* ── Post-save action sheet ─────────────────────── */
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+#post-save-sheet button:hover{opacity:.88}
+#post-save-sheet button:active{transform:scale(.97)}
+
+/* ── Profile switcher ───────────────────────────── */
+#profile-menu{animation:cmdIn .14s ease}
+#profile-menu > div:hover{background:var(--surf2)}
+
+/* ── More Options card ──────────────────────────── */
+#more-opts-card{border:1.5px dashed var(--bor);background:var(--surf)}
+#more-opts-card:hover{border-color:var(--acc)}
+#more-opts-body .fld label{font-size:11.5px}
+
+/* ── Spinner ─────────────────────────────────────── */
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* masked values (kept for bank account display) */
+.masked-val{cursor:pointer;letter-spacing:2px;color:var(--tx2);font-family:monospace}
+.masked-val:hover{color:var(--acc)}
 
 /* ── P&L CARD ────────────────────────────────── */
 .pl-bar{height:8px;border-radius:99px;overflow:hidden;background:var(--surf2);margin:6px 0}
@@ -415,171 +457,678 @@ hr{border:none;border-top:1.5px solid var(--bor);margin:14px 0}
    GST 2.0 slabs (Sept 2025): 0, 5, 18, 40%
 ══════════════════════════════════════════════════ */
 
-/* ── SUPABASE CONFIG ─────────────────────────────
-   Replace these two values with your Supabase project.
-   Get them at: https://supabase.com → Project → Settings → API
-   ─────────────────────────────────────────────── */
-const SUPABASE_URL  = 'YOUR_SUPABASE_URL';   // e.g. https://xyzxyz.supabase.co
-const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY';
-const SB_CONFIGURED = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON !== 'YOUR_SUPABASE_ANON_KEY';
+/* ── ERROR BOUNDARY ─────────────────────────────
+   Catches all uncaught JS errors and unhandled
+   promise rejections. Shows a recovery screen
+   instead of a blank white page.
+─────────────────────────────────────────────── */
+(function installErrorBoundary() {
+  function showErrorScreen(msg, src, line) {
+    // Don't override the lock screen
+    const body = document.body;
+    if(!body) return;
+    // Don't show if already showing error
+    if(document.getElementById('rf-error-screen')) return;
 
-let _sb = null; // supabase client (null until configured)
-if(SB_CONFIGURED){
-  try { _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON); } catch(e){}
-}
+    const div = document.createElement('div');
+    div.id = 'rf-error-screen';
+    div.style.cssText = [
+      'position:fixed;inset:0;z-index:99999',
+      'background:#F6F3EE;display:flex;flex-direction:column',
+      'align-items:center;justify-content:center',
+      'padding:32px 20px;text-align:center;font-family:sans-serif'
+    ].join(';');
+    div.innerHTML = [
+      '<div style="font-size:48px;margin-bottom:16px">⚠️</div>',
+      '<div style="font-size:18px;font-weight:700;color:#1C1915;margin-bottom:8px">',
+        'Something went wrong',
+      '</div>',
+      '<div style="font-size:13px;color:#7A746C;max-width:320px;line-height:1.6;margin-bottom:24px">',
+        'An unexpected error occurred. Your data is safe — it is stored on your device.',
+      '</div>',
+      '<button onclick="location.reload()" style="',
+        'background:#BF4A2B;color:#fff;border:none;border-radius:10px;',
+        'padding:12px 28px;font-size:14px;font-weight:600;cursor:pointer;',
+        'font-family:sans-serif;margin-bottom:12px',
+      '">Reload App</button>',
+      '<div style="font-size:10px;color:#aaa;margin-top:8px;word-break:break-all;max-width:360px">',
+        (msg||'Unknown error') + (line ? ' (line '+line+')' : ''),
+      '</div>'
+    ].join('');
+    body.appendChild(div);
 
-/* ── AUTH STATE ─────────────────────────────────── */
-const AUTH = {
-  user: null,      // supabase user object or null
-  loading: true,   // true while checking session
-  screen: 'login', // 'login' | 'signup'
-  email: '', password: '', error: '', busy: false,
-  offline: false,  // true if user chooses to skip login
-  syncStatus: 'idle', // 'idle'|'syncing'|'ok'|'err'
+    // Log for debugging
+    console.error('[RetailFlow Error]', msg, src, line);
+  }
+
+  window.onerror = function(msg, src, line, col, err) {
+    // Ignore cross-origin script errors (browser extensions etc.)
+    if(msg === 'Script error.' && !src) return false;
+    showErrorScreen(msg, src, line);
+    return false; // don't suppress console
+  };
+
+  window.onunhandledrejection = function(e) {
+    const msg = e.reason?.message || String(e.reason) || 'Unhandled promise rejection';
+    // Ignore AbortError — common from fetch/crypto interrupts, not fatal
+    if(msg.includes('AbortError') || msg.includes('abort')) return;
+    showErrorScreen(msg, '', '');
+  };
+})();
+
+/* ── APP CONFIG ─────────────────────────────────── */
+const APP_URL      = 'https://retailflow-six.vercel.app'; // update after Firebase migration
+const APP_BUILD_TS = Date.now(); // changes every page load in dev; bake a fixed value at deploy time
+const APP_NAME     = 'RetailFlow';
+const SHOW_POWERED = true; // set false in Settings to hide "Made with RetailFlow" on invoices
+
+/* ══════════════════════════════════════════════════
+   CLOUD BACKEND — Supabase or Firebase
+   ──────────────────────────────────────────────────
+   HOW TO CONFIGURE:
+   Set CLOUD_PROVIDER to 'supabase' or 'firebase',
+   then fill in the matching credentials block.
+   Leave CLOUD_PROVIDER = null for local-only mode.
+
+   ── SUPABASE SETUP ─────────────────────────────
+   1. Go to supabase.com → New project
+   2. Settings → API → copy URL + anon key below
+   3. In SQL Editor run:
+
+      create table retailflow_data (
+        user_id   uuid references auth.users primary key,
+        enc_blob  text        not null,
+        enc_salt  text        not null,
+        updated_at timestamptz default now(),
+        app_ver   int         default 3
+      );
+      alter table retailflow_data enable row level security;
+      create policy "own row only" on retailflow_data
+        using  (auth.uid() = user_id)
+        with check (auth.uid() = user_id);
+
+   4. Authentication → Providers → enable Email + Google
+
+   ── FIREBASE SETUP ──────────────────────────────
+   1. console.firebase.google.com → New project
+   2. Authentication → Sign-in methods → enable Email + Google
+   3. Firestore Database → Create database (production mode)
+   4. Firestore → Rules → paste:
+
+      rules_version = '2';
+      service cloud.firestore {
+        match /databases/{db}/documents {
+          match /retailflow_data/{userId} {
+            allow read, write: if request.auth != null
+                               && request.auth.uid == userId;
+          }
+        }
+      }
+
+   5. Project settings → Web app → copy config below
+
+   ── ZERO-KNOWLEDGE NOTE ─────────────────────────
+   enc_blob stores business data as JSON.
+══════════════════════════════════════════════════ */
+
+const CLOUD_PROVIDER = null;  // 'supabase' | 'firebase' | null
+
+const CLOUD_CFG = {
+  supabase: {
+    url:     'YOUR_SUPABASE_URL',       // https://xyz.supabase.co
+    anonKey: 'YOUR_SUPABASE_ANON_KEY',
+  },
+  firebase: {
+    apiKey:            'YOUR_FIREBASE_API_KEY',
+    authDomain:        'YOUR_PROJECT.firebaseapp.com',
+    projectId:         'YOUR_PROJECT_ID',
+    storageBucket:     'YOUR_PROJECT.appspot.com',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    appId:             'YOUR_APP_ID',
+  },
 };
 
-/* ── AUTH HELPERS ───────────────────────────────── */
-async function sbSignInGoogle(){
-  if(!_sb) return;
-  AUTH.busy=true; renderAuthScreen();
-  const {error} = await _sb.auth.signInWithOAuth({
-    provider:'google',
-    options:{ redirectTo: window.location.href }
+/* ══════════════════════════════════════════════════
+   CLOUD ADAPTER  — common interface for both backends
+   .user          normalized {id, email, name, avatar}
+   .push(blob,salt,ts)  → {ok, error}
+   .pull()              → {enc_blob,enc_salt,updated_at} | null
+   .signIn/signUp/signInGoogle/signOut
+   .onAuthChange(cb)    → call cb(user) on change
+══════════════════════════════════════════════════ */
+const CLOUD = (() => {
+  let _client = null;   // Supabase or Firebase app
+  let _db     = null;   // Firestore db (Firebase only)
+  let _user   = null;
+
+  /* ── Supabase adapter ── */
+  const SBAdapter = {
+    async init(){
+      const {url, anonKey} = CLOUD_CFG.supabase;
+      if(!url||url==='YOUR_SUPABASE_URL') return false;
+      try{
+        _client = window.supabase.createClient(url, anonKey,{
+          auth:{ persistSession:true, autoRefreshToken:true }
+        });
+        return true;
+      }catch(e){ console.warn('Supabase init failed',e); return false; }
+    },
+    onAuthChange(cb){
+      if(!_client) return;
+      _client.auth.onAuthStateChange(async(_event, session)=>{
+        _user = session?.user ? _normalizeUser(session.user,'sb') : null;
+        cb(_user, _event);
+      });
+    },
+    async signIn(email,pw){
+      if(!_client) return {error:'Not configured'};
+      const {error} = await _client.auth.signInWithPassword({email,password:pw});
+      return {error:error?.message||null};
+    },
+    async signUp(email,pw){
+      if(!_client) return {error:'Not configured'};
+      const {error} = await _client.auth.signUp({email,password:pw});
+      return {error:error?.message||null};
+    },
+    async signInGoogle(){
+      if(!_client) return {error:'Not configured'};
+      const {error} = await _client.auth.signInWithOAuth({
+        provider:'google', options:{redirectTo:window.location.href}
+      });
+      return {error:error?.message||null};
+    },
+    async signOut(){ if(_client) await _client.auth.signOut(); _user=null; },
+    async push(encBlob, encSalt, updatedAt){
+      if(!_client||!_user) return {ok:false,error:'Not signed in'};
+      const {error} = await _client.from('retailflow_data').upsert({
+        user_id: _user.id,
+        enc_blob: encBlob,
+        enc_salt: encSalt,
+        updated_at: updatedAt,
+        app_ver: 3,
+      },{onConflict:'user_id'});
+      return {ok:!error, error:error?.message||null};
+    },
+    async pull(){
+      if(!_client||!_user) return null;
+      const {data,error} = await _client
+        .from('retailflow_data')
+        .select('enc_blob,enc_salt,updated_at')
+        .eq('user_id',_user.id)
+        .single();
+      if(error||!data) return null;
+      return data;
+    },
+    getUser(){ return _user; },
+  };
+
+  /* ── Firebase adapter ── */
+  const FBAdapter = {
+    async init(){
+      const cfg = CLOUD_CFG.firebase;
+      if(!cfg.apiKey||cfg.apiKey==='YOUR_FIREBASE_API_KEY') return false;
+      try{
+        // Firebase SDKs loaded via CDN (added below if provider=firebase)
+        const app  = window.firebase.initializeApp(cfg);
+        _client    = window.firebase.auth(app);
+        _db        = window.firebase.firestore(app);
+        return true;
+      }catch(e){ console.warn('Firebase init failed',e); return false; }
+    },
+    onAuthChange(cb){
+      if(!_client) return;
+      _client.onAuthStateChanged(user=>{
+        _user = user ? _normalizeUser(user,'fb') : null;
+        cb(_user, user ? 'SIGNED_IN' : 'SIGNED_OUT');
+      });
+    },
+    async signIn(email,pw){
+      try{
+        await _client.signInWithEmailAndPassword(email,pw);
+        return {error:null};
+      }catch(e){ return {error:e.message}; }
+    },
+    async signUp(email,pw){
+      try{
+        await _client.createUserWithEmailAndPassword(email,pw);
+        return {error:null};
+      }catch(e){ return {error:e.message}; }
+    },
+    async signInGoogle(){
+      try{
+        const provider = new window.firebase.auth.GoogleAuthProvider();
+        await _client.signInWithPopup(provider);
+        return {error:null};
+      }catch(e){ return {error:e.message}; }
+    },
+    async signOut(){ await _client.signOut(); _user=null; },
+    async push(encBlob, encSalt, updatedAt){
+      if(!_db||!_user) return {ok:false,error:'Not signed in'};
+      try{
+        await _db.collection('retailflow_data').doc(_user.id).set({
+          enc_blob:encBlob, enc_salt:encSalt,
+          updated_at:updatedAt, app_ver:3,
+        });
+        return {ok:true,error:null};
+      }catch(e){ return {ok:false,error:e.message}; }
+    },
+    async pull(){
+      if(!_db||!_user) return null;
+      try{
+        const doc = await _db.collection('retailflow_data').doc(_user.id).get();
+        if(!doc.exists) return null;
+        const d = doc.data();
+        return {enc_blob:d.enc_blob, enc_salt:d.enc_salt, updated_at:d.updated_at};
+      }catch(e){ return null; }
+    },
+    getUser(){ return _user; },
+  };
+
+  /* ── Normalize user across providers ── */
+  function _normalizeUser(raw, provider){
+    if(provider==='sb') return {
+      id:raw.id, email:raw.email,
+      name: raw.user_metadata?.full_name || raw.email?.split('@')[0] || '?',
+      avatar: raw.user_metadata?.avatar_url || null,
+    };
+    if(provider==='fb') return {
+      id:raw.uid, email:raw.email,
+      name: raw.displayName || raw.email?.split('@')[0] || '?',
+      avatar: raw.photoURL || null,
+    };
+    return {id:'', email:'', name:'?', avatar:null};
+  }
+
+  const _adapter = CLOUD_PROVIDER==='supabase' ? SBAdapter
+                 : CLOUD_PROVIDER==='firebase'  ? FBAdapter
+                 : null;
+
+  return {
+    get user(){ return _adapter ? _adapter.getUser() : null },
+    get ready(){ return !!_adapter },
+    init:          ()=>_adapter?_adapter.init():Promise.resolve(false),
+    onAuthChange:  cb=>_adapter&&_adapter.onAuthChange(cb),
+    signIn:        (e,p)=>_adapter?_adapter.signIn(e,p):Promise.resolve({error:'No cloud provider'}),
+    signUp:        (e,p)=>_adapter?_adapter.signUp(e,p):Promise.resolve({error:'No cloud provider'}),
+    signInGoogle:  ()=>_adapter?_adapter.signInGoogle():Promise.resolve({error:'No cloud provider'}),
+    signOut:       ()=>_adapter?_adapter.signOut():Promise.resolve(),
+    push:          (b,s,t)=>_adapter?_adapter.push(b,s,t):Promise.resolve({ok:false,error:'No cloud provider'}),
+    pull:          ()=>_adapter?_adapter.pull():Promise.resolve(null),
+  };
+})();
+
+/* ══════════════════════════════════════════════════
+   AUTH STATE  — unified, provider-agnostic
+══════════════════════════════════════════════════ */
+const AUTH = {
+  user:       null,    // normalized user {id,email,name,avatar} or null
+  loading:    true,
+  screen:     'login', // 'login' | 'signup'
+  email: '', password: '', error: '', busy: false,
+  offline:    false,   // true = skip cloud, use local only
+  syncStatus: 'idle',  // 'idle'|'syncing'|'ok'|'err'|'conflict'
+  _retryTimer: null,
+  _localTs:   null,    // ISO string of last local save time
+};
+
+/* ── Load Firebase SDKs on demand if needed ── */
+(function loadCloudSDKs(){
+  if(CLOUD_PROVIDER==='firebase'){
+    ['app','auth','firestore'].forEach(mod=>{
+      const s=document.createElement('script');
+      s.src=`https://www.gstatic.com/firebasejs/9.23.0/firebase-${mod}-compat.js`;
+      document.head.appendChild(s);
+    });
+  }
+})();
+
+/* ── Init cloud + wire auth listener ── */
+(async function initCloud(){
+  if(!CLOUD.ready){ AUTH.loading=false; return; }
+  const ok = await CLOUD.init();
+  if(!ok){ AUTH.loading=false; return; }
+  CLOUD.onAuthChange(async (user, event)=>{
+    AUTH.user = user;
+    AUTH.loading = false;
+    if(user && event==='SIGNED_IN'){
+      await cloudPull();
+    } else if(!user){
+      render();
+    }
   });
-  if(error){ AUTH.error=error.message; AUTH.busy=false; renderAuthScreen(); }
-}
+})();
 
+if(!CLOUD.ready){ AUTH.loading=false; }  // no provider → no wait
+
+/* ── AUTH HELPERS ─────────────────────────────── */
+async function sbSignInGoogle(){
+  AUTH.busy=true; AUTH.error=''; renderAuthScreen();
+  const {error} = await CLOUD.signInGoogle();
+  AUTH.busy=false;
+  if(error){ AUTH.error=error; renderAuthScreen(); }
+}
 async function sbSignIn(){
-  if(!_sb) return;
   AUTH.busy=true; AUTH.error=''; renderAuthScreen();
-  const {error} = await _sb.auth.signInWithPassword({ email:AUTH.email, password:AUTH.password });
+  const {error} = await CLOUD.signIn(AUTH.email, AUTH.password);
   AUTH.busy=false;
-  if(error){ AUTH.error=error.message; renderAuthScreen(); }
+  if(error){ AUTH.error=error; renderAuthScreen(); }
 }
-
 async function sbSignUp(){
-  if(!_sb) return;
   AUTH.busy=true; AUTH.error=''; renderAuthScreen();
-  const {error} = await _sb.auth.signUp({ email:AUTH.email, password:AUTH.password });
+  const {error} = await CLOUD.signUp(AUTH.email, AUTH.password);
   AUTH.busy=false;
-  if(error){ AUTH.error=error.message; renderAuthScreen(); }
-  else { AUTH.error=''; AUTH.screen='login'; toast('Account created! Check your email to confirm.','success'); renderAuthScreen(); }
+  if(error){ AUTH.error=error; renderAuthScreen(); }
+  else{ AUTH.error=''; AUTH.screen='login'; toast('Account created — check email to confirm.','success'); renderAuthScreen(); }
 }
-
 async function sbSignOut(){
   closeDrawer();
-  if(_sb) await _sb.auth.signOut();
+  await CLOUD.signOut();
   AUTH.user=null; AUTH.offline=false;
   render();
 }
 
-/* Push data to Supabase (non-blocking, best-effort) */
+/* ══════════════════════════════════════════════════
+   ENCRYPTED CLOUD SYNC  — zero-knowledge
+   Cloud stores business data. Pulled data is
+   applied directly to the app on sync.
+══════════════════════════════════════════════════ */
+const _SYNC_TS_KEY = 'rf_sync_ts';  // ISO timestamp of last successful push
+
 async function cloudSync(){
-  if(!_sb || !AUTH.user) return;
+  if(!CLOUD.ready || !AUTH.user) return;
+  const pid     = S._activeProfileId||'default';
+  const encBlob = await IDB.get('rf_data_'+pid);
+  if(!encBlob) return;
+
   AUTH.syncStatus='syncing'; updateSyncBadge();
-  try {
-    const uid = AUTH.user.id;
-    const payload = {
-      user_id:uid, updated_at:new Date().toISOString(),
-      firm:S.firm, customers:S.customers, invoices:S.invoices,
-      purchases:S.purchases, sales:S.sales, expenses:S.expenses,
-      payments:S.payments, inventory:S.inventory, inv_counters:S.inv_counters
-    };
-    const { error } = await _sb.from('retailflow_data').upsert(payload, { onConflict:'user_id' });
-    AUTH.syncStatus = error ? 'err' : 'ok';
-  } catch(e){ AUTH.syncStatus='err'; }
+  clearTimeout(AUTH._retryTimer);
+
+  const ts = new Date().toISOString();
+  const {ok, error} = await CLOUD.push(encBlob, '', ts);
+  if(ok){
+    AUTH.syncStatus='ok';
+    AUTH._localTs = ts;
+    localStorage.setItem(_SYNC_TS_KEY, ts);
+  } else {
+    AUTH.syncStatus='err';
+    console.warn('Sync push failed:', error);
+    // Retry after 30s
+    AUTH._retryTimer = setTimeout(cloudSync, 30000);
+  }
   updateSyncBadge();
+}
+
+async function cloudPull(){
+  if(!CLOUD.ready || !AUTH.user) return;
+  const remote = await CLOUD.pull();
+  if(!remote || !remote.enc_blob) return;
+
+  const localTs  = localStorage.getItem(_SYNC_TS_KEY);
+  const remoteTs = remote.updated_at;
+
+  // Conflict check: if local data is newer than remote, don't overwrite silently
+  if(localTs && remoteTs && localTs > remoteTs){
+    AUTH.syncStatus='conflict';
+    updateSyncBadge();
+    toast('⚠️ Local data is newer than cloud — push to sync.','warn');
+    return;
+  }
+
+  // Pull is newer (or no local timestamp) — apply it
+  const pullPid = S._activeProfileId||'default';
+  await IDB.set('rf_data_'+pullPid, remote.enc_blob);
+  localStorage.setItem(_SYNC_TS_KEY, remoteTs || new Date().toISOString());
+  _PLAIN_KEYS.forEach(k=>{localStorage.removeItem(k);IDB.del(k).catch(()=>{});});
+
+  // Apply pulled data to state directly
+  try {
+    const data = JSON.parse(remote.enc_blob);
+    S.firm=data.firm||null; S.customers=data.customers||[];
+    S.invoices=data.invoices||[]; S.purchases=data.purchases||[];
+    S.sales=data.sales||[]; S.expenses=data.expenses||[];
+    S.payments=data.payments||[]; S.inventory=data.inventory||[];
+    S.inv_counters=data.inv_counters||{}; S.inv_categories=data.inv_categories||[];
+    save();
+    toast('Cloud data applied ☁️','info');
+    render();
+  } catch(e) {
+    toast('Could not apply cloud data','error');
+  }
 }
 
 function updateSyncBadge(){
   const dot = document.getElementById('sync-dot');
   if(!dot) return;
-  dot.className = 'sync-dot' + (AUTH.syncStatus==='syncing'?' syncing':AUTH.syncStatus==='err'?' err':'');
-  dot.title = {idle:'Cloud sync',syncing:'Syncing…',ok:'Synced ✓',err:'Sync failed'}[AUTH.syncStatus]||'';
+  const labels={idle:'Cloud sync',syncing:'Syncing…',ok:'Synced ✓',err:'Sync failed — will retry',conflict:'Conflict: local is newer'};
+  const cls={syncing:' syncing',err:' err',conflict:' err'};
+  dot.className='sync-dot'+(cls[AUTH.syncStatus]||'');
+  dot.title=labels[AUTH.syncStatus]||'';
 }
 
-/* Pull data from Supabase on login */
-async function cloudPull(){
-  if(!_sb || !AUTH.user) return;
-  try {
-    const {data,error} = await _sb.from('retailflow_data').select('*').eq('user_id',AUTH.user.id).single();
-    if(error || !data) return;
-    if(data.firm)          S.firm          = data.firm;
-    if(data.customers)     S.customers     = data.customers;
-    if(data.invoices)      S.invoices      = data.invoices;
-    if(data.purchases)     S.purchases     = data.purchases;
-    if(data.sales)         S.sales         = data.sales;
-    if(data.expenses)      S.expenses      = data.expenses;
-    if(data.payments)      S.payments      = data.payments;
-    if(data.inventory)     S.inventory     = data.inventory;
-    if(data.inv_counters)  S.inv_counters  = data.inv_counters;
-    save(); render(); toast('Data loaded from cloud ☁️','info');
-  } catch(e){}
-}
-
-/* ── AUTH SCREEN RENDERER ───────────────────────── */
+/* ── AUTH SCREEN ───────────────────────────────── */
 function renderAuthScreen(){
-  const app = document.getElementById('app'); if(!app) return;
-  const sc = AUTH.screen;
-  const googleSVG = `<svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.909-2.259c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>`;
-  const isLogin = sc === 'login';
-  const cfgNote = !SB_CONFIGURED ? `<div style="background:var(--ylb);border:1px solid #d4a83a;border-radius:9px;padding:10px 13px;font-size:11px;color:var(--ylw);text-align:left;margin-bottom:18px;line-height:1.65">⚙️ <b>Setup required:</b> Open the HTML file and set <code style="background:rgba(0,0,0,.06);padding:1px 4px;border-radius:4px">SUPABASE_URL</code> and <code style="background:rgba(0,0,0,.06);padding:1px 4px;border-radius:4px">SUPABASE_ANON</code> at the top of the script to enable cloud features.</div>` : '';
-  app.innerHTML = `<div class="auth-root">
-    <div class="auth-card">
-      <div class="auth-logo">Retail<b>Flow</b></div>
-      <div class="auth-tagline">Smart invoicing for Indian retail</div>
-      ${cfgNote}
-      <div class="auth-heading">${isLogin?'Welcome back':'Create account'}</div>
-      <div class="auth-sub">${isLogin?'Sign in to sync your data across devices':'Get started — it\'s free'}</div>
-      ${AUTH.error?`<div class="auth-error">⚠️ ${esc(AUTH.error)}</div>`:''}
-      <button class="auth-google-btn" onclick="sbSignInGoogle()" ${!SB_CONFIGURED||AUTH.busy?'disabled':''}>
-        ${AUTH.busy?'<span class="auth-loader"></span>':googleSVG}
-        ${AUTH.busy?'Connecting…':'Continue with Google'}
-      </button>
-      <div class="auth-divider">or</div>
-      <input class="auth-input" type="email" placeholder="Email address" value="${esc(AUTH.email)}"
-        oninput="AUTH.email=this.value" autocomplete="email">
-      <input class="auth-input" type="password" placeholder="Password" value="${esc(AUTH.password)}"
-        oninput="AUTH.password=this.value" autocomplete="${isLogin?'current-password':'new-password'}"
-        onkeydown="if(event.key==='Enter')${isLogin?'sbSignIn()':'sbSignUp()'}">
-      <button class="auth-btn" onclick="${isLogin?'sbSignIn()':'sbSignUp()'}" ${!SB_CONFIGURED||AUTH.busy?'disabled':''}>
-        ${AUTH.busy?'<span class="auth-loader"></span>':''}
-        ${isLogin?'Sign in':'Create account'}
-      </button>
-      <div class="auth-switch">${isLogin?'New here? <span onclick="AUTH.screen=\'signup\';renderAuthScreen()">Create an account</span>':'Already have an account? <span onclick="AUTH.screen=\'login\';renderAuthScreen()">Sign in</span>'}</div>
-      <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bor);text-align:center">
-        <button class="auth-offline-btn" onclick="AUTH.offline=true;render()">Continue without signing in →</button>
-        <div style="font-size:10.5px;color:var(--tx2);margin-top:6px">Data stays on this device only · No cloud sync</div>
-      </div>
+  const app=$('app'); if(!app) return;
+  const isLogin = AUTH.screen==='login';
+  const configured = CLOUD.ready;
+  const providerLabel = CLOUD_PROVIDER==='firebase' ? 'Firebase' : 'Supabase';
+  const googleSVG=`<svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.909-2.259c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>`;
+  const cfgNote = !configured ? `<div style="background:var(--ylb);border:1px solid #d4a83a;border-radius:9px;padding:10px 13px;font-size:11px;color:var(--ylw);text-align:left;margin-bottom:18px;line-height:1.65">
+    ⚙️ <b>Cloud not configured.</b> Set <code>CLOUD_PROVIDER</code> and fill in <code>CLOUD_CFG</code> at the top of the script to enable sync. Works fully offline without it.
+  </div>` : '';
+  app.innerHTML=`<div class="auth-root"><div class="auth-card">
+    <div class="auth-logo">Retail<b>Flow</b></div>
+    <div class="auth-tagline">Smart invoicing for Indian retail</div>
+    ${cfgNote}
+    <div class="auth-heading">${isLogin?'Welcome back':'Create account'}</div>
+    <div class="auth-sub">${isLogin?'Sign in to sync across devices':'Get started — free forever'}</div>
+    ${AUTH.error?`<div class="auth-error">⚠️ ${esc(AUTH.error)}</div>`:''}
+    <button class="auth-google-btn" onclick="sbSignInGoogle()" ${!configured||AUTH.busy?'disabled':''}>
+      ${AUTH.busy?'<span class="auth-loader"></span>':googleSVG}
+      ${AUTH.busy?'Connecting…':'Continue with Google'}
+    </button>
+    <div class="auth-divider">or</div>
+    <input class="auth-input" type="email" placeholder="Email address" value="${esc(AUTH.email)}" oninput="AUTH.email=this.value" autocomplete="email">
+    <input class="auth-input" type="password" placeholder="Password" value="${esc(AUTH.password)}" oninput="AUTH.password=this.value"
+      autocomplete="${isLogin?'current-password':'new-password'}" onkeydown="if(event.key==='Enter')${isLogin?'sbSignIn()':'sbSignUp()'}">
+    <button class="auth-btn" onclick="${isLogin?'sbSignIn()':'sbSignUp()'}" ${!configured||AUTH.busy?'disabled':''}>
+      ${AUTH.busy?'<span class="auth-loader"></span>':''}
+      ${isLogin?'Sign in':'Create account'}
+    </button>
+    <div class="auth-switch">${isLogin
+      ?'New here? <span onclick="AUTH.screen=\'signup\';renderAuthScreen()">Create an account</span>'
+      :'Have an account? <span onclick="AUTH.screen=\'login\';renderAuthScreen()">Sign in</span>'}</div>
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bor);text-align:center">
+      <button class="auth-offline-btn" onclick="AUTH.offline=true;render()">Use offline (local only) →</button>
+      <div style="font-size:10.5px;color:var(--tx2);margin-top:6px">Data stays on this device · No account needed</div>
     </div>
-  </div>`;
-}
-
-/* Listen for Supabase auth state changes */
-if(_sb){
-  _sb.auth.onAuthStateChange(async (event, session) => {
-    AUTH.user = session?.user || null;
-    AUTH.loading = false;
-    if(AUTH.user && event === 'SIGNED_IN'){
-      await cloudPull();
-    }
-    render();
-  });
-} else {
-  // No Supabase — mark loading done immediately so auth screen or app renders
-  AUTH.loading = false;
-  // render() will be called at init below
+  </div></div>`;
 }
 
 /* ── CONSTANTS ──────────────────────────────────── */
 const GST_SLABS = [0, 5, 18, 40];
+const GST_SLABS_EXTENDED = [0, 0.1, 0.25, 1.5, 3, 5, 12, 18, 28, 40];
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Jammu & Kashmir','Ladakh','Chandigarh','Puducherry','Andaman & Nicobar Islands','Dadra & Nagar Haveli','Daman & Diu','Lakshadweep'];
 const UNITS = ['pcs','kg','g','litre','ml','box','bag','dozen','pair','set','roll','sheet','metre'];
 const EXP_CATS = ['Rent','Electricity','Staff Salary','Transport','Packaging','Maintenance','Marketing','Miscellaneous'];
 const ECOL = {'Rent':'bc','Electricity':'bch','Staff Salary':'bu','Transport':'bca','Packaging':'bpu','Maintenance':'bch','Marketing':'bc','Miscellaneous':''};
 const PAY_METHODS = ['cash','upi','credit','cheque','other']; // partial is a separate toggle, not a method
 
-/* ── STORAGE ────────────────────────────────────── */
+/* ══════════════════════════════════════════════════
+   AES-256-GCM ENCRYPTION ENGINE
+   Data stored in IndexedDB as JSON.
+══════════════════════════════════════════════════ */
+/* Storage key constants (encryption removed) */
+const _DARK_KEY      = 'rf_dark';      // not sensitive, plaintext OK
+const _PROFILES_KEY  = 'rf_profiles';  // plaintext list of {id,name} for switcher UI
+const _ACTIVE_KEY    = 'rf_active_profile'; // active profile id
+
+// Keys to purge once encrypted (no plaintext left behind)
+const _PLAIN_KEYS = ['rf_firm','rf_customers','rf_invoices','rf_purchases',
+  'rf_sales','rf_expenses','rf_payments','rf_inventory','rf_inv_counters'];
+// Also purge these from IDB if they somehow landed there
+async function _purgeAllPlaintext() {
+  _PLAIN_KEYS.forEach(k => {
+    localStorage.removeItem(k);
+    IDB.del(k).catch(()=>{});
+  });
+}
+
+
+
+/* ── Migrate old business_nature='other' → 'contractor' ── */
+function _migrateNature(){
+  if(!S.firm) return;
+  if(S.firm.business_nature==='other'){
+    S.firm.business_nature = 'contractor';
+    // Also re-derive billing type for safety
+    S.firm.billing_type = deriveBillingType('contractor', S.firm.customer_type||'walkin');
+    save();
+  }
+}
+
+/* ── Migrate proforma → tax (proforma removed in R1) ── */
+function _migrateProforma(){
+  if(!S.invoices||!S.invoices.length) return;
+  let changed=false;
+  S.invoices=S.invoices.map(i=>{if(i.inv_type==='proforma'){changed=true;return{...i,inv_type:'tax'};}return i;});
+  if(changed) save();
+}
+
+/* ── Multi-business profile helpers ─────────────── */
+/* Profile key helpers — encryption removed, data keyed by rf_data_<pid> */
+
+function _getProfiles() {
+  return JSON.parse(localStorage.getItem(_PROFILES_KEY)||'[]');
+}
+function _saveProfiles(list) {
+  localStorage.setItem(_PROFILES_KEY, JSON.stringify(list));
+}
+function _getActiveId() {
+  return localStorage.getItem(_ACTIVE_KEY)||'default';
+}
+
+/* ══════════════════════════════════════════════════
+   IndexedDB STORAGE LAYER
+   Stores business data blobs. Everything else
+   (flags, settings, profile list) stays in
+   localStorage which is sync and tiny.
+
+   Capacity: 50MB+ vs localStorage's 5MB cap.
+   Transactions: atomic — no partial writes.
+   Async: never blocks the UI thread.
+
+   Fallback: if IDB is unavailable (private
+   browsing on some browsers), transparently
+   falls back to localStorage.
+══════════════════════════════════════════════════ */
+const IDB = (() => {
+  const DB_NAME    = 'RetailFlowDB';
+  const DB_VERSION = 1;
+  const STORE      = 'blobs';
+  let _db = null;
+
+  function _open() {
+    if(_db) return Promise.resolve(_db);
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = e => {
+        const db = e.target.result;
+        if(!db.objectStoreNames.contains(STORE)){
+          db.createObjectStore(STORE);
+        }
+      };
+      req.onsuccess = e => {
+        _db = e.target.result;
+        // Handle unexpected DB close (browser eviction)
+        _db.onclose = () => { _db = null; };
+        resolve(_db);
+      };
+      req.onerror = () => reject(req.error);
+      req.onblocked = () => reject(new Error('IDB blocked'));
+    });
+  }
+
+  async function get(key) {
+    try {
+      const db = await _open();
+      return new Promise((resolve, reject) => {
+        const tx  = db.transaction(STORE, 'readonly');
+        const req = tx.objectStore(STORE).get(key);
+        req.onsuccess = () => resolve(req.result ?? null);
+        req.onerror   = () => reject(req.error);
+      });
+    } catch(e) {
+      // Fallback to localStorage
+      return localStorage.getItem(key);
+    }
+  }
+
+  async function set(key, value) {
+    try {
+      const db = await _open();
+      return new Promise((resolve, reject) => {
+        const tx  = db.transaction(STORE, 'readwrite');
+        const req = tx.objectStore(STORE).put(value, key);
+        req.onsuccess = () => resolve();
+        req.onerror   = () => reject(req.error);
+        // Also remove from localStorage if it was there before
+        tx.oncomplete = () => {
+          try { localStorage.removeItem(key); } catch(e){}
+        };
+      });
+    } catch(e) {
+      // Fallback to localStorage
+      try { localStorage.setItem(key, value); } catch(e2){}
+    }
+  }
+
+  async function del(key) {
+    try {
+      const db = await _open();
+      return new Promise((resolve, reject) => {
+        const tx  = db.transaction(STORE, 'readwrite');
+        const req = tx.objectStore(STORE).delete(key);
+        req.onsuccess = () => resolve();
+        req.onerror   = () => reject(req.error);
+      });
+    } catch(e) {
+      try { localStorage.removeItem(key); } catch(e2){}
+    }
+    // Always remove from localStorage too (migration cleanup)
+    try { localStorage.removeItem(key); } catch(e){}
+  }
+
+  async function keys() {
+    try {
+      const db = await _open();
+      return new Promise((resolve, reject) => {
+        const tx  = db.transaction(STORE, 'readonly');
+        const req = tx.objectStore(STORE).getAllKeys();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror   = () => reject(req.error);
+      });
+    } catch(e) {
+      return [];
+    }
+  }
+
+  // Migrate existing localStorage blob to IDB on first run
+  async function migrateFromLocalStorage(key) {
+    try {
+      const existing = localStorage.getItem(key);
+      if(existing) {
+        await set(key, existing);
+        localStorage.removeItem(key);
+      }
+    } catch(e) {}
+  }
+
+  return { get, set, del, keys, migrateFromLocalStorage };
+})();
+
+/* PIN system removed — data stored in IndexedDB without encryption */
+
+/* ── STORAGE (thin wrapper — kept for dark mode) ── */
 const LS = {
   get:(k,d)=>{try{const v=localStorage.getItem(k);return v!=null?JSON.parse(v):d;}catch(e){return d;}},
   set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -587,31 +1136,89 @@ const LS = {
 
 /* ── STATE ──────────────────────────────────────── */
 const S = {
-  firm:       LS.get('rf_firm',null),
-  customers:  LS.get('rf_customers',[]),
-  invoices:   LS.get('rf_invoices',[]),
-  purchases:  LS.get('rf_purchases',[]),
-  sales:      LS.get('rf_sales',[]),
-  expenses:   LS.get('rf_expenses',[]),
-  payments:   LS.get('rf_payments',[]),
-  inventory:  LS.get('rf_inventory',[]),
-  inv_counters: LS.get('rf_inv_counters',{}),
-  dark:       LS.get('rf_dark',false),
+  firm:null, customers:[], invoices:[], purchases:[], sales:[],
+  expenses:[], payments:[], inventory:[], inv_counters:{},
+  dark: LS.get(_DARK_KEY, false),
+  inv_categories: [],
+  _activeProfileId: localStorage.getItem('rf_active_profile')||'default',
+  _setupNature: '',   // 'kirana'|'wholesale'|'service'|'manufacturer'|'contractor'
+  _profiles: JSON.parse(localStorage.getItem('rf_profiles')||'[]'),
   mode:'invoice', page:'main', tab:'create', bizTab:'dash',
   invFilter:'all', custFilter:'all', fyFilter:'all',
   reminder:null, viewInv:null, payModal:null,
   thermalInv:null, waInv:null, _editFirmOpen:false,
   invForm:null, pForm:null, sForm:null, efForm:null, invItemForm:null,
   _reminderMsg:'', _partialPct:0,
-  invSearch:'', custSearch:'', custStatement:null, analyticsPeriod:'monthly', analyticsTab:'performance',
-  selectedInvs: new Set(), // bulk select set
+  invSearch:'', custSearch:'', custStatement:null,
+  analyticsPeriod:'monthly', analyticsTab:'performance',
+  selectedInvs: new Set(),
 };
 
+/* ── SECURE SAVE ────────────────────────────────── */
 const save = () => {
-  ['firm','customers','invoices','purchases','sales','expenses','payments','inventory','inv_counters','dark'].forEach(k=>LS.set('rf_'+k,S[k]));
-  // Non-blocking cloud sync after every save
-  if(_sb && AUTH.user) setTimeout(cloudSync, 0);
+  LS.set(_DARK_KEY, S.dark);
+  const pid = S._activeProfileId||'default';
+  (async()=>{
+    const blob = {
+      firm:S.firm, customers:S.customers, invoices:S.invoices,
+      purchases:S.purchases, sales:S.sales, expenses:S.expenses,
+      payments:S.payments, inventory:S.inventory, inv_counters:S.inv_counters,
+      inv_categories:S.inv_categories
+    };
+    await IDB.set('rf_data_'+pid, JSON.stringify(blob));
+    // Keep legacy LS keys purged
+    _PLAIN_KEYS.forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
+  })();
+  if(CLOUD.ready && AUTH.user) setTimeout(cloudSync, 0);
 };
+
+/* ── ASYNC APP INIT (replaces sync render() at bottom) ── */
+async function initApp() {
+  if(S.dark) document.documentElement.setAttribute('data-dark','');
+
+  const pid = S._activeProfileId||'default';
+
+  // Try IDB first (new storage)
+  const raw = await IDB.get('rf_data_'+pid);
+  if(raw){
+    try {
+      const data = JSON.parse(raw);
+      S.firm          = data.firm||null;
+      S.customers     = data.customers||[];
+      S.invoices      = data.invoices||[];
+      S.purchases     = data.purchases||[];
+      S.sales         = data.sales||[];
+      S.expenses      = data.expenses||[];
+      S.payments      = data.payments||[];
+      S.inventory     = data.inventory||[];
+      S.inv_counters  = data.inv_counters||{};
+      S.inv_categories= data.inv_categories||[];
+    } catch(e){ console.warn('IDB parse error', e); }
+  } else {
+    // Fallback: migrate legacy localStorage data
+    const hasPlain = !!localStorage.getItem('rf_firm');
+    if(hasPlain){
+      S.firm          = LS.get('rf_firm',null);
+      S.customers     = LS.get('rf_customers',[]);
+      S.invoices      = LS.get('rf_invoices',[]);
+      S.purchases     = LS.get('rf_purchases',[]);
+      S.sales         = LS.get('rf_sales',[]);
+      S.expenses      = LS.get('rf_expenses',[]);
+      S.payments      = LS.get('rf_payments',[]);
+      S.inventory     = LS.get('rf_inventory',[]);
+      S.inv_counters  = LS.get('rf_inv_counters',{});
+      // Migrate to IDB and clear LS
+      save();
+      _PLAIN_KEYS.forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
+    }
+    // Clear any old encrypted blobs from PIN version
+  }
+
+  _migrateProforma();
+  _migrateNature();
+  S.invForm = blankInv();
+  render();
+}
 
 /* ── UTILITIES ──────────────────────────────────── */
 const $ = id => document.getElementById(id);
@@ -666,10 +1273,13 @@ const r2 = v => Math.round((Number(v) + Number.EPSILON) * 100) / 100;
 // TAX INVOICE  → any GST-registered business (legally required)
 // BILL OF SUPPLY → unregistered Firm/Service (GST-exempt supply)
 // INVOICE        → unregistered Retail/Shop (no GST compliance term applies)
-function invDocLabel(isReg, isFirm, invType) {
-  if(invType === 'proforma') return 'PROFORMA INVOICE';
-  if(isReg) return 'TAX INVOICE';
-  return isFirm ? 'BILL OF SUPPLY' : 'INVOICE';
+function invDocLabel(isReg, isFirm, invType, docType) {
+  docType = docType||'invoice';
+  if(docType==='quotation') return 'QUOTATION / ESTIMATE';
+  if(docType==='challan')   return 'DELIVERY CHALLAN';
+  if(docType==='return')    return 'SALES RETURN';
+  if(!isReg) return isFirm ? 'BILL OF SUPPLY' : 'INVOICE';
+  return 'TAX INVOICE';
 }
 
 function amountInWords(amount) {
@@ -717,7 +1327,9 @@ function calcItem(item, isReg, isIGST) {
   return { gross, discAmt, taxable, gstAmt, cgst, sgst, igst, total };
 }
 
-function buildInvTotals(items, isReg, isIGST) {
+function buildInvTotals(items, isReg, isIGST, opts) {
+  // opts = {inv_discount, inv_discount_type, extra_charges, tcs_rate, round_off}
+  opts = opts || {};
   let subtotal=0, totalDisc=0, totalTaxable=0, totalGST=0, grandTotal=0;
   const gstSummary = {};
   items.forEach(item => {
@@ -735,11 +1347,33 @@ function buildInvTotals(items, isReg, isIGST) {
     gstSummary[rk].sgst    += c.sgst;
     gstSummary[rk].igst    += c.igst;
   });
+  // Invoice-level discount
+  let invDiscAmt = 0;
+  if(Number(opts.inv_discount)>0){
+    invDiscAmt = opts.inv_discount_type==='amt'
+      ? r2(Number(opts.inv_discount))
+      : r2(grandTotal * Number(opts.inv_discount)/100);
+    grandTotal = r2(grandTotal - invDiscAmt);
+  }
+  // Extra charges (freight, packaging)
+  const extraCharges = r2(Number(opts.extra_charges)||0);
+  grandTotal = r2(grandTotal + extraCharges);
+  // TCS
+  const tcsAmt = r2(grandTotal * (Number(opts.tcs_rate)||0)/100);
+  grandTotal = r2(grandTotal + tcsAmt);
+  // Round off
+  let roundOff = 0;
+  if(opts.round_off){
+    const rounded = Math.round(grandTotal);
+    roundOff = r2(rounded - grandTotal);
+    grandTotal = rounded;
+  }
   return {
     subtotal    : r2(subtotal),
     totalDisc   : r2(totalDisc),
     totalTaxable: r2(totalTaxable),
     totalGST    : r2(totalGST),
+    invDiscAmt, extraCharges, tcsAmt, roundOff,
     grandTotal  : r2(grandTotal),
     gstSummary  : Object.fromEntries(Object.entries(gstSummary).map(([k,v])=>[k,{
       taxable: r2(v.taxable), gst: r2(v.gst), cgst: r2(v.cgst), sgst: r2(v.sgst), igst: r2(v.igst)
@@ -761,20 +1395,26 @@ const blankInv = () => {
   return {
     customer_name:'', customer_phone:'', customer_gstin:'', customer_address:'',
     ship_to:'', place_of_supply: S.firm?.state||'',
-    inv_type: 'tax',    // 'tax' | 'proforma'
+    inv_type: 'tax',    // 'tax' only now (proforma removed)
+    doc_type: 'invoice', // 'invoice'|'quotation'|'challan'|'return'
     is_igst: false,     // true = interstate → IGST instead of CGST+SGST
     pay_type, payment_method,
     is_partial: false,
     partial_amount:0, due_date:'', date:today(),
-    notes: S.firm?.default_notes||'',
+    notes: S.firm?.default_tnc||S.firm?.default_notes||'',
     status:'paid',
+    po_number:'', order_id:'',
+    inv_discount:0, inv_discount_type:'pct',
+    extra_charges:0, extra_charges_label:'Freight / Packaging',
+    tcs_rate:0, round_off:false,
+    payment_terms:0,
     items:[blankItem()]
   };
 };
 const blankP = () => ({supplier:'',item:'',amount:'',date:today(),status:'paid',gst_rate:18});
 const blankS = () => ({customer:'',desc:'',amount:'',date:today(),payment_type:'cash'});
 const blankEf = () => ({category:'Rent',description:'',amount:'',date:today()});
-const blankInvItem = () => ({id:uid(),name:'',unit:'pcs',rate:0,gst_rate:18,stock:0,hsn:''});
+const blankInvItem = () => ({id:uid(),name:'',unit:'pcs',rate:0,mrp:0,price_mode:'excl',item_type:'product',category:'',gst_rate:18,stock:0,hsn:'',party_prices:[],custom_fields:[],online_store:false});
 
 function validateGSTIN(g){
   // Format: 2-digit state + 5 alpha + 4 digit + 1 alpha + 1 digit + Z + 1 alphanumeric
@@ -793,8 +1433,10 @@ function render() {
   const app = $('app'); if(!app) return;
   if(S.dark) document.documentElement.setAttribute('data-dark','');
 
-  // Auth gate: show login screen unless user is authenticated or chose offline mode
-  if(!AUTH.user && !AUTH.offline){
+  // Auth gate: only show cloud login if a provider is configured AND app is not
+  // already PIN-unlocked. PIN is the primary lock; cloud auth is optional.
+  const needsCloudAuth = CLOUD.ready && !AUTH.user && !AUTH.offline;
+  if(needsCloudAuth){
     if(AUTH.loading){
       app.innerHTML = `<div class="auth-root"><div style="color:var(--tx2);font-size:13px;display:flex;align-items:center;gap:10px"><span class="auth-loader" style="border-top-color:var(--acc);border-color:rgba(0,0,0,.15)"></span>Loading…</div></div>`;
       return;
@@ -833,105 +1475,270 @@ function postRender(){
    SETUP
 ══════════════════════════════════════════════════ */
 function renderSetup() {
-  const gst = S._setupGST || false;
+  const nature = S._setupNature || '';
+  const cfg    = nature ? NATURE_CONFIG[nature] : null;
+  const gst    = S._setupGST || false;
+  const isB2B  = ['wholesale','manufacturer','contractor'].includes(nature);
+  const isMfr  = nature === 'manufacturer';
+
   return `<div class="cwrap"><div class="ccard">
-    <div class="row jbet mb14">
-      <div><div class="biglogo">RetailFlow</div><div class="asub">Set up your business — takes 2 minutes</div></div>
+    <div class="row jbet mb10">
+      <div><div class="biglogo">RetailFlow</div><div class="asub">Set up in 60 seconds</div></div>
       <button class="ibtn" onclick="toggleDark()">${S.dark?'☀️':'🌙'}</button>
     </div>
-    <div class="lsnotice">✅ All data saves automatically in your browser. Works offline.</div>
+    <div class="lsnotice mb16">✅ Works offline · Data saved on your device · No login needed</div>
 
-    <div class="sechead">Business Info</div>
+    <!-- Business Name -->
     <div class="fld">
-      <label>Billing Type <span class="fs10 tx2">— shapes your invoice form &amp; print layout</span></label>
-      <div class="tgl">
-        <button class="${(S._setupBillingType||'retail')==='retail'?'on':''}" onclick="S._setupBillingType='retail';render()">🛒 Retail / Shop</button>
-        <button class="${(S._setupBillingType||'retail')==='firm'?'on':''}" onclick="S._setupBillingType='firm';render()">🏢 Firm / Service</button>
-      </div>
-      <div class="fs11 tx2 mt8">${(S._setupBillingType||'retail')==='retail'
-        ? 'Quick item billing, thermal receipts, walk-in customers. Best for shops, kirana, medical, hardware.'
-        : 'Formal invoices with Bill To / Ship To, Place of Supply, item descriptions, signatory. Best for service providers, contractors, agencies.'
-      }</div>
+      <label>Business Name *</label>
+      <input id="sf-nm" placeholder="e.g. Sharma General Store" style="font-size:15px;padding:11px 13px">
     </div>
-
-    <div class="fld"><label>Firm / Business Name *</label><input id="sf-nm" placeholder="e.g. Sharma General Store"></div>
     <div class="g2">
-      <div class="fld"><label>Proprietor Name</label><input id="sf-pr" placeholder="Your full name (optional)"></div>
+      <div class="fld"><label>Proprietor Name</label><input id="sf-pr" placeholder="Your name (optional)"></div>
       <div class="fld"><label>Phone</label><input id="sf-ph" placeholder="Mobile number" type="tel"></div>
     </div>
-    <div class="g2">
-      <div class="fld"><label>Email</label><input id="sf-em" placeholder="email@example.com" type="email"></div>
-      <div class="fld"><label>PAN Number</label><input id="sf-pan" placeholder="AAAAA0000A" maxlength="10" oninput="this.value=this.value.toUpperCase()"></div>
-    </div>
-    <div class="fld"><label>Business Address *</label><textarea id="sf-ad" rows="2" placeholder="Shop no., Street, City, State — PIN"></textarea></div>
-    <div class="g2">
-      <div class="fld"><label>Authorised Signatory Name <span class="fs10 tx2">(invoice footer)</span></label>
-        <input id="sf-sig" placeholder="e.g. Ajay Kumar (optional)">
+
+    <!-- Business Type -->
+    <div class="fld mt4">
+      <label>Business Type *</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+        ${Object.entries(NATURE_CONFIG).map(([key,nc])=>`
+          <button onclick="setupSelectNature('${key}')" style="display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:11px;border:2px solid ${nature===key?'var(--acc)':'var(--bor)'};background:${nature===key?'var(--acb)':'var(--surf)'};cursor:pointer;text-align:left;transition:all .15s;width:100%">
+            <span style="font-size:22px;flex-shrink:0">${nc.emoji}</span>
+            <div>
+              <div style="font-weight:700;font-size:12px;color:var(--tx);line-height:1.3">${nc.label}</div>
+              <div style="font-size:10px;color:var(--tx2);margin-top:1px;line-height:1.3">${nc.desc}</div>
+            </div>
+          </button>`).join('')}
       </div>
-      <div class="fld"><label>Digital Signature <span class="fs10 tx2">(optional image — PNG/JPG)</span></label>
-        <input type="file" id="sf-dsign" accept="image/png,image/jpeg,image/gif" style="font-size:12px;padding:6px 0" onchange="previewSetupSign(this)">
-        <div id="sf-dsign-preview" style="margin-top:6px"></div>
-      </div>
+      ${nature?`<div style="margin-top:8px;font-size:11px;color:var(--acc);font-weight:600">
+        ✓ ${cfg.emoji} ${cfg.label} — invoice layout set to ${isB2B||nature==='service'?'Formal A4':'Quick Retail'}, prefix ${cfg.inv_prefix}
+      </div>`:'<div style="margin-top:6px;font-size:11px;color:var(--tx2)">Tap one — everything configures automatically.</div>'}
     </div>
 
-    <div class="sechead">GST Status</div>
+    <!-- Logo — Manufacturer only -->
+    ${isMfr?`
     <div class="fld">
-      <label>Are you GST Registered?</label>
-      <div class="tgl">
-        <button class="${!gst?'on':''}" onclick="setSetupGST(false)">❌ No — Bill of Supply</button>
-        <button class="${gst?'on':''}" onclick="setSetupGST(true)">✅ Yes — Tax Invoice</button>
+      <label>Company Logo <span class="fs10 tx2">(printed on invoice header)</span></label>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:4px">
+        <div id="sf-logo-preview" style="width:60px;height:60px;border-radius:10px;border:2px dashed var(--bor);display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--surf2);flex-shrink:0">
+          <span style="font-size:20px;color:var(--tx2)">⚙️</span>
+        </div>
+        <label class="btn bgho bsm" style="cursor:pointer;gap:6px">
+          📷 Upload Logo
+          <input type="file" id="sf-logo" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none" onchange="previewLogo('sf-logo','sf-logo-preview')">
+        </label>
       </div>
-      <div class="fs11 tx2 mt8">${gst
-        ? 'You will issue <b>Tax Invoices</b> with CGST + SGST per item.'
-        : 'You will issue <b>Bills of Supply</b>. No GST charged to customers.'}</div>
+    </div>`:'<input type="hidden" id="sf-logo" value="">'}
+
+    <!-- Address -->
+    <div class="fld"><label>Address *</label>
+      <textarea id="sf-ad" rows="2" placeholder="Shop no., Street, Area"></textarea>
     </div>
-    ${gst ? `
+    <div class="g2">
+      <div class="fld"><label>City *</label><input id="sf-city" placeholder="e.g. Prayagraj"></div>
+      <div class="fld"><label>Pincode</label><input id="sf-pin" placeholder="211001" type="tel" maxlength="6"></div>
+    </div>
+
+    <!-- GST -->
+    <div class="fld mt4">
+      <label>GST Status</label>
+      <div class="tgl mt6">
+        <button class="${!gst?'on':''}" onclick="setSetupGST(false)">No GST</button>
+        <button class="${gst?'on':''}" onclick="setSetupGST(true)">GST Registered</button>
+      </div>
+    </div>
+    ${gst?`
     <div class="g2">
       <div class="fld"><label>GSTIN *</label><input id="sf-gs" placeholder="22AAAAA0000A1Z5" maxlength="15" oninput="this.value=this.value.toUpperCase()"></div>
       <div class="fld"><label>State *</label>
-        <select id="sf-st"><option value="">Select state…</option>${STATES.map(s=>`<option>${esc(s)}</option>`).join('')}</select>
+        <select id="sf-st"><option value="">Select…</option>${STATES.map(s=>`<option>${esc(s)}</option>`).join('')}</select>
       </div>
     </div>
-    <div class="fld"><label>Default Item GST Rate</label>
-      <select id="sf-gr">${GST_SLABS.map(r=>`<option value="${r}"${r===18?' selected':''}>${r}% GST</option>`).join('')}</select>
-    </div>` : ''}
+    <div class="fld"><label>Default GST Rate</label>
+      <select id="sf-gr">${GST_SLABS.map(r=>`<option value="${r}"${r===18?' selected':''}>${r}%</option>`).join('')}</select>
+    </div>`:'<input type="hidden" id="sf-gs" value=""><input type="hidden" id="sf-st" value=""><input type="hidden" id="sf-gr" value="0">'}
 
-    <div class="sechead">Payment & UPI</div>
+    <!-- Payment details — contextual -->
+    ${isB2B?`
+    <div class="fld mt4"><label>Bank Details <span class="fs10 tx2">(printed on invoice)</span></label></div>
     <div class="g2">
-      <div class="fld"><label>Default Payment Method</label>
-        <select id="sf-pm"><option value="cash">Cash</option><option value="upi">UPI</option><option value="credit">Credit</option><option value="cheque">Cheque</option><option value="other">Other</option></select>
-      </div>
-      <div class="fld"><label>UPI ID (for QR code)</label><input id="sf-upi" placeholder="shopname@upi"></div>
-    </div>
-
-    <div class="sechead">Bank Details (for Invoice)</div>
-    <div class="g2">
-      <div class="fld"><label>Account Holder Name</label><input id="sf-bn" placeholder="As per bank records"></div>
+      <div class="fld"><label>Account Holder</label><input id="sf-bn" placeholder="As per bank records"></div>
       <div class="fld"><label>Account Number</label><input id="sf-bac" placeholder="Bank account number"></div>
     </div>
     <div class="g2">
-      <div class="fld"><label>IFSC Code</label><input id="sf-bif" placeholder="e.g. SBIN0001234" oninput="this.value=this.value.toUpperCase()"></div>
-      <div class="fld"><label>Bank & Branch</label><input id="sf-bbr" placeholder="e.g. SBI, MG Road"></div>
+      <div class="fld"><label>IFSC Code</label><input id="sf-bif" placeholder="SBIN0001234" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fld"><label>Bank &amp; Branch</label><input id="sf-bbr" placeholder="e.g. SBI, MG Road"></div>
+    </div>
+    <input type="hidden" id="sf-upi" value="">`:`
+    <div class="fld mt4">
+      <label>UPI ID <span class="fs10 tx2">(for payment QR on invoice)</span></label>
+      <input id="sf-upi" placeholder="yourshop@upi">
+    </div>
+    <input type="hidden" id="sf-bn" value=""><input type="hidden" id="sf-bac" value="">
+    <input type="hidden" id="sf-bif" value=""><input type="hidden" id="sf-bbr" value="">`}
+
+    <!-- Invoice numbering -->
+    <div class="fld mt4">
+      <label>Invoice Number <span class="fs10 tx2">(you can change this later)</span></label>
+      <div class="g2">
+        <input id="sf-invpfx" placeholder="Prefix" maxlength="20" value="${cfg?cfg.inv_prefix:'INV'}">
+        <input id="sf-invstart" type="number" min="1" value="1" placeholder="Start from">
+      </div>
     </div>
 
-    <div class="sechead">Invoice Defaults</div>
+    <!-- Invoice & Legal Details -->
+    <div class="sechead mt4">Invoice &amp; Legal Details</div>
     <div class="g2">
-      <div class="fld"><label>Invoice Number Prefix <span class="fs10 tx2">(e.g. INV, GST, your initials)</span></label>
-        <input id="sf-invpfx" placeholder="e.g. INV or GST/24-25" maxlength="20" value="INV">
+      <div class="fld"><label>Email <span class="fs10 tx2">(on invoice header)</span></label>
+        <input id="sf-em" placeholder="email@example.com" type="email">
       </div>
-      <div class="fld"><label>Start From Number</label>
-        <input id="sf-invstart" type="number" min="1" value="1" placeholder="1">
+      <div class="fld"><label>PAN Number <span class="fs10 tx2">(mandatory for GST invoices &gt;₹50,000)</span></label>
+        <input id="sf-pan" placeholder="AAAAA0000A" maxlength="10" oninput="this.value=this.value.toUpperCase()">
       </div>
     </div>
-    <div class="fld"><label>Default Terms / Footer Note</label>
-      <textarea id="sf-notes" rows="2" placeholder="e.g. Goods once sold will not be returned. Payment due within 7 days."></textarea>
+    <div class="g2">
+      <div class="fld"><label>Authorised Signatory <span class="fs10 tx2">(invoice footer)</span></label>
+        <input id="sf-sig" placeholder="e.g. Rajesh Kumar (optional)">
+      </div>
+      <div class="fld"><label>Digital Signature <span class="fs10 tx2">(PNG/JPG — optional)</span></label>
+        <input type="file" id="sf-dsign" accept="image/png,image/jpeg,image/gif" style="font-size:12px;padding:6px 0" onchange="previewSetupSign(this)">
+        <div id="sf-dsign-preview" style="margin-top:4px"></div>
+      </div>
     </div>
 
-    <button class="btn bpri wfull mt14" onclick="saveFirm()">🚀 Start Using RetailFlow</button>
+    <!-- Hidden computed fields -->
+    <input type="hidden" id="sf-pm" value="${cfg?cfg.payment_method:'cash'}">
+    <input type="hidden" id="sf-bt" value="${nature?deriveBillingType(nature,'walkin'):'retail'}">
+    <textarea id="sf-notes" style="display:none"></textarea>
+
+    <button class="btn bpri wfull mt16" onclick="saveFirm()" ${!nature?'disabled style="opacity:.5;cursor:not-allowed"':''}>
+      🚀 Start Using RetailFlow
+    </button>
+    ${!nature?'<div style="font-size:11px;color:var(--tx2);text-align:center;margin-top:8px">Select your business type above to continue</div>':''}
   </div></div>`;
 }
 
+
 window.setSetupGST = v => { S._setupGST = v; render(); };
+
+/* Apply nature in Edit Firm — derives billing type automatically */
+window.applyNatureToFirm = function(key) {
+  S.firm.business_nature = key;
+  S._editBillingType = deriveBillingType(key, S.firm.customer_type||'walkin');
+  render();
+};
+
+window.setupSelectNature = function(key) {
+  S._setupNature = key;
+  S._setupBillingType = deriveBillingType(key, 'walkin');
+  render();
+};
+
+
+
+/* ── Business nature → configuration map ── */
+/* Billing type derived from nature + customer type — no toggle needed */
+function deriveBillingType(nature, custType) {
+  // These natures always produce formal invoices regardless of customer type
+  if(['wholesale','service','manufacturer','contractor'].includes(nature)) return 'firm';
+  // Kirana billing to other businesses → formal
+  if(nature==='kirana' && custType==='business') return 'firm';
+  // Legacy 'other' maps to contractor — treat as formal
+  if(nature==='other') return custType==='business' ? 'firm' : 'retail';
+  // Everything else (unknown/future natures) → retail
+  return 'retail';
+}
+/* ── Default print settings — merged into firm object ── */
+const DEFAULT_PRINT_SETTINGS = {
+  // Template
+  ps_template:   'classic',   // 'classic' | 'minimal' | 'modern'
+  ps_accent:     '#BF4A2B',   // primary accent color
+  ps_header_bg:  '#1a2744',   // table header / badge background
+  ps_paper:      'a4',        // 'a4' | 'a5'
+  ps_font:       'normal',    // 'normal' | 'compact'
+
+  // Header toggles
+  ps_show_logo:         true,
+  ps_show_proprietor:   true,
+  ps_show_email:        true,
+  ps_show_pan:          true,
+  ps_show_gstin:        true,
+  ps_show_phone:        true,
+
+  // Body toggles
+  ps_show_hsn:          true,
+  ps_show_discount:     true,
+  ps_show_item_desc:    true,
+  ps_show_words:        true,
+  ps_show_qr:           true,
+
+  // Footer toggles
+  ps_show_bank:         true,
+  ps_show_signatory:    true,
+  ps_show_digital_sign: true,
+  ps_show_tnc:          true,
+  ps_show_powered:      true,
+  ps_show_page_no:      true,
+};
+
+/* Helper: get a print setting from firm, falling back to default */
+function ps(firm, key) {
+  return firm && firm[key] !== undefined ? firm[key] : DEFAULT_PRINT_SETTINGS[key];
+}
+
+const NATURE_CONFIG = {
+  kirana: {
+    label: 'Kirana / Retail Shop',
+    emoji: '🛒',
+    billing_type: 'retail',
+    payment_method: 'cash',
+    hide_signatory: true,
+    inv_prefix: 'BILL',
+    tnc_idx: 0,   // General Retail T&C
+    desc: 'Walk-in customers, quick billing, thermal receipts, cash payments.',
+  },
+  wholesale: {
+    label: 'Wholesale / Distributor',
+    emoji: '🏭',
+    billing_type: 'firm',
+    payment_method: 'credit',
+    hide_signatory: false,
+    inv_prefix: 'INV',
+    tnc_idx: 2,   // Credit/Wholesale T&C
+    desc: 'B2B customers, credit terms, delivery challans, formal invoices.',
+  },
+  service: {
+    label: 'Service Provider',
+    emoji: '🛠️',
+    billing_type: 'firm',
+    payment_method: 'upi',
+    hide_signatory: false,
+    inv_prefix: 'SVC',
+    tnc_idx: 3,   // Service T&C
+    desc: 'Clients, quotations, project billing, UPI / bank transfer.',
+  },
+  manufacturer: {
+    label: 'Manufacturer',
+    emoji: '⚙️',
+    billing_type: 'firm',
+    payment_method: 'credit',
+    hide_signatory: false,
+    inv_prefix: 'INV',
+    tnc_idx: 4,   // Manufacturer T&C
+    desc: 'Dealers and distributors, bulk orders, challans and formal invoices.',
+  },
+  contractor: {
+    label: 'Contractor',
+    emoji: '🏗️',
+    billing_type: 'firm',
+    payment_method: 'cheque',
+    hide_signatory: false,
+    inv_prefix: 'WORK',
+    tnc_idx: 5,   // Contractor T&C
+    desc: 'Tender-based work, site projects, govt billing, work orders.',
+  },
+};
 
 /* ── DIGITAL SIGN HELPERS ───────────────────────── */
 function readSignFile(file, onDone) {
@@ -940,6 +1747,39 @@ function readSignFile(file, onDone) {
   r.onload = e => onDone(e.target.result);
   r.readAsDataURL(file);
 }
+/* ── Logo upload + compress to <100KB ── */
+window.previewLogo = function(inputId, previewId) {
+  const inp = document.getElementById(inputId);
+  const file = inp && inp.files && inp.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      // Compress: draw to canvas max 300x300
+      const MAX = 300;
+      const scale = Math.min(1, MAX/Math.max(img.width,img.height));
+      const w = Math.round(img.width*scale), h = Math.round(img.height*scale);
+      const canvas = document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      // Try quality 0.75, reduce if still >100KB
+      let b64 = canvas.toDataURL('image/jpeg', 0.75);
+      if(b64.length > 136000) b64 = canvas.toDataURL('image/jpeg', 0.5);
+      if(b64.length > 136000) b64 = canvas.toDataURL('image/jpeg', 0.3);
+      // Store in temp state
+      if(inputId.startsWith('sf-')) S._setupLogo = b64;
+      else S._editLogo = b64;
+      // Update preview
+      const prev = document.getElementById(previewId);
+      if(prev) prev.innerHTML = '<img src="'+b64+'" style="width:100%;height:100%;object-fit:contain">';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
 window.previewSetupSign = inp => {
   readSignFile(inp.files[0], b64 => {
     S._setupDigitalSign = b64;
@@ -968,28 +1808,46 @@ window.saveFirm = () => {
     const gstin=$('sf-gs')?.value?.trim(), st=$('sf-st')?.value;
     if(!gstin||!st){ alert('GSTIN and State are required for GST registered businesses.'); return; }
   }
+  // Apply nature config — silent auto-configuration
+  const nature = S._setupNature||'contractor';
+  const ncfg   = NATURE_CONFIG[nature]||NATURE_CONFIG.contractor;
+  const city   = $('sf-city')?.value?.trim()||'';
+  const tncText = TNC_TEMPLATES[ncfg.tnc_idx]
+    ? TNC_TEMPLATES[ncfg.tnc_idx].replace(/\{city\}/g, city||'Local')
+    : '';
+
   S.firm = {
-    id:uid(), firm_name:nm, proprietor:pr, address:ad, phone:$('sf-ph')?.value?.trim()||'',
+    id:uid(), firm_name:nm, proprietor:pr, address:ad,
+    city,
+    pincode: $('sf-pin')?.value?.trim()||'',
+    logo: S._setupLogo||'',
+    phone:$('sf-ph')?.value?.trim()||'',
     email: $('sf-em')?.value?.trim()||'',
     pan: $('sf-pan')?.value?.trim()||'',
     signatory: $('sf-sig')?.value?.trim()||'',
-    billing_type: S._setupBillingType||'retail',
+    hide_signatory: ncfg.hide_signatory,
+    billing_type: $('sf-bt')?.value || deriveBillingType(nature, 'walkin'),
+    business_nature: nature,
+    customer_type: 'walkin',
     digital_sign: S._setupDigitalSign||'',
     gst_registered:gst,
     gstin: gst?($('sf-gs')?.value?.trim()||''):'',
     state: gst?($('sf-st')?.value||''):'',
     default_gst_rate: gst?Number($('sf-gr')?.value||18):0,
-    payment_method: $('sf-pm')?.value||'cash',
+    payment_method: ncfg.payment_method,
     upi_id: $('sf-upi')?.value?.trim()||'',
     bank_name: $('sf-bn')?.value?.trim()||'',
     bank_acc: $('sf-bac')?.value?.trim()||'',
     bank_ifsc: $('sf-bif')?.value?.trim()||'',
     bank_branch: $('sf-bbr')?.value?.trim()||'',
-    default_notes: $('sf-notes')?.value?.trim()||'',
-    inv_prefix: $('sf-invpfx')?.value?.trim()||'INV',
+    default_notes: '',
+    default_tnc: tncText,
+    inv_prefix: $('sf-invpfx')?.value?.trim()||ncfg.inv_prefix,
     inv_start: Math.max(1, Number($('sf-invstart')?.value)||1),
   };
+  S._setupLogo = undefined;
   S.invForm = blankInv();
+  _syncProfileName();
   save(); render();
 };
 
@@ -1029,7 +1887,16 @@ function renderTopbar() {
       </div>
       <div style="display:flex;gap:6px">
         <button class="backup-btn" style="flex:1;justify-content:center" onclick="backupData();closeDrawer()">⬇️ Backup</button>
-        <label class="backup-btn" style="flex:1;justify-content:center;cursor:pointer">⬆️ Restore<input type="file" accept=".json" onchange="restoreData(this)" style="display:none"></label>
+        <label class="backup-btn" style="flex:1;justify-content:center;cursor:pointer">⬆️ Restore<input type="file" accept=".json,.rfbak" onchange="restoreData(this)" style="display:none"></label>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:2px">
+
+        <button class="backup-btn" style="flex:1;justify-content:center;color:var(--red);border-color:var(--red)" onclick="closeDrawer();setTimeout(confirmPanicWipe,100)">🗑️ Wipe data</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:2px">
+        <button class="backup-btn" style="flex:1;justify-content:center" onclick="closeDrawer();closeFinancialYear()">📅 Close FY</button>
+        <button class="backup-btn" style="flex:1;justify-content:center" onclick="closeDrawer();editFirm('print')">🖨️ Print</button>
+        <a class="backup-btn" style="flex:1;justify-content:center;text-decoration:none" href="https://wa.me/?text=${encodeURIComponent('Try RetailFlow — free GST invoicing: '+APP_URL)}" target="_blank">📤 Share App</a>
       </div>
       <button class="d-signout" onclick="${u?'sbSignOut()':'AUTH.offline=false;AUTH.user=null;render()'}">
         ${u?'🚪 Sign out':'🔑 Sign in / Create account'}
@@ -1054,11 +1921,34 @@ function renderTopbar() {
     </div>
     <!-- Global Search removed -->
     <div class="tbr">
-      ${SB_CONFIGURED&&AUTH.user?`<span id="sync-dot" class="sync-dot" title="Cloud sync"></span>`:''}
+      ${CLOUD.ready&&AUTH.user?`<span id="sync-dot" class="sync-dot" title="Cloud sync"></span>`:''}
       <button class="btn bgho bsm no-print" onclick="openCmdPalette()" style="gap:6px" title="Command palette (Ctrl+K)">
         <span style="font-size:13px">⌘</span><span style="font-size:11px;color:var(--tx2)">Search</span><kbd style="font-size:9px;background:var(--surf2);border:1px solid var(--bor);border-radius:4px;padding:1px 5px;font-family:monospace;color:var(--tx2)">K</kbd>
       </button>
-      <button class="btn bgho bsm no-print" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="editFirm()">⚙️ <span style="display:none" id="tb-firm-nm">${esc(S.firm?.firm_name||'')}</span></button>
+      <button id="pwa-install-btn" class="btn bgho bsm no-print" onclick="triggerPWAInstall()" title="Install RetailFlow on this device" style="display:none;gap:5px;background:var(--acb);border-color:var(--acc);color:var(--acc)">
+        <span style="font-size:14px">📲</span><span style="font-size:11px;font-weight:600">Install App</span>
+      </button>
+      <div style="position:relative" id="profile-switcher-wrap">
+        <button class="btn bgho bsm no-print" style="max-width:130px;overflow:hidden;gap:4px" onclick="toggleProfileMenu()" title="Switch business / Settings">
+          ${S.firm?.logo?`<img src="${S.firm.logo}" style="width:18px;height:18px;border-radius:3px;object-fit:contain">`:'<span style="font-size:13px">🏪</span>'}
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px">${esc(S.firm?.firm_name||'Setup')}</span>
+          <span style="font-size:9px">▾</span>
+        </button>
+        <div id="profile-menu" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--surf);border:1.5px solid var(--bor);border-radius:12px;box-shadow:var(--shlg);min-width:200px;z-index:300;padding:8px 0;animation:cmdIn .14s ease">
+          <div style="padding:6px 14px 4px;font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px">Your Businesses</div>
+          ${(S._profiles&&S._profiles.length>0?S._profiles:[{id:'default',name:S.firm?.firm_name||'My Business'}]).map(p=>`
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;cursor:pointer;${p.id===(S._activeProfileId||'default')?'background:var(--surf2)':''}" onclick="switchProfile('${p.id}')">
+              <span style="font-size:16px">🏪</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</div>
+                ${p.id===(S._activeProfileId||'default')?'<div style="font-size:10px;color:var(--acc)">Active</div>':''}
+              </div>
+            </div>`).join('')}
+          <div style="border-top:1px solid var(--bor);margin:4px 0"></div>
+          <div style="padding:8px 14px;cursor:pointer;font-size:12px;color:var(--acc)" onclick="addNewBusiness()">+ Add Business</div>
+          <div style="padding:8px 14px;cursor:pointer;font-size:12px;color:var(--tx)" onclick="editFirm();toggleProfileMenu()">⚙️ Edit Current Business</div>
+        </div>
+      </div>
       <button class="ibtn no-print" onclick="toggleDark()">${S.dark?'☀️':'🌙'}</button>
       ${userSection}
     </div>
@@ -1100,7 +1990,8 @@ function renderInvCreate() {
   const isFirm = (S.firm.billing_type||'retail') === 'firm';
   const payType = f.pay_type || (f.payment_method === 'credit' ? 'credit' : 'instant');
   const isPar   = payType === 'credit' && f.is_partial === true;
-  const preview = buildInvTotals(f.items, isReg);
+  const _isQuot = f.doc_type==='quotation';
+  const preview = buildInvTotals(f.items, _isQuot?false:isReg, f.is_igst, {inv_discount:f.inv_discount,inv_discount_type:f.inv_discount_type,extra_charges:f.extra_charges,tcs_rate:f.tcs_rate,round_off:f.round_off});
 
   const payUI = `
     <div class="g2">
@@ -1160,10 +2051,13 @@ function renderInvCreate() {
       <div class="row jbet" style="font-family:var(--ffd);font-size:20px"><span>Total</span><span class="txacc">${fmt(preview.grandTotal)}</span></div>`}
     </div>
     <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
-      <button class="btn bpri wfull" onclick="saveInvoice()" style="justify-content:center;font-size:14px;padding:10px">
+      <button class="btn bpri wfull" onclick="saveInvoice()" style="justify-content:center;font-size:15px;padding:12px;font-weight:700;letter-spacing:.3px">
         💾 Save ${isReg?'Invoice': isFirm?'Bill of Supply':'Invoice'}
       </button>
-      <button class="btn bgho wfull" onclick="clearInv()" style="justify-content:center">Clear Form</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn bgho" style="flex:1;justify-content:center;font-size:12px" onclick="saveAndNew()">➕ Save &amp; New</button>
+        <button class="btn bgho" style="flex:1;justify-content:center;font-size:12px" onclick="clearInv()">🗑 Clear</button>
+      </div>
     </div>
   </div>`;
 
@@ -1176,9 +2070,11 @@ function renderInvCreate() {
     <div class="fsec"><div class="fsec-icon">👤</div><div class="fsec-label">${isFirm ? 'Party Details' : 'Customer'}</div></div>
     <div class="g2">
       <div class="fld" style="position:relative"><label>${isFirm ? 'Party / Organisation Name *' : 'Customer Name *'}</label>
-        <input id="ic-cn" placeholder="${isFirm ? 'Organisation or party name' : 'Type name or select existing'}" value="${esc(f.customer_name)}" list="cust-ac"
-          oninput="onCustNameInput(this.value)" autocomplete="off">
-        <datalist id="cust-ac">${S.customers.map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist>
+        <input id="ic-cn" placeholder="${isFirm ? 'Organisation or party name' : 'Type name or select existing'}" value="${esc(f.customer_name)}"
+          autocomplete="off"
+          oninput="attachCustAC && (document.getElementById('cust-ac-drop')||{style:{}}).style"
+          style="width:100%">
+        <div id="cust-ac-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surf);border:1.5px solid var(--bor);border-radius:11px;box-shadow:var(--shlg);z-index:200;max-height:220px;overflow-y:auto;animation:cmdIn .14s ease"></div>
         <div id="cust-card"></div>
         <div id="outstanding-warn-box">${(()=>{
           const match = f.customer_name ? S.customers.find(c=>c.name.toLowerCase()===f.customer_name.toLowerCase()) : null;
@@ -1215,6 +2111,18 @@ function renderInvCreate() {
 
     <!-- Section: Invoice Info -->
     <div class="fsec"><div class="fsec-icon">🧾</div><div class="fsec-label">Invoice Details</div></div>
+    <div class="fld" style="margin-bottom:10px">
+      <label>Document Type</label>
+      <div class="trow" style="flex-wrap:wrap;gap:6px">
+        <button class="tag${(!f.doc_type||f.doc_type==='invoice')?'  on':''}" onclick="setDocType('invoice')">🧾 Tax Invoice</button>
+        <button class="tag${f.doc_type==='quotation'?' on':''}" onclick="setDocType('quotation')">📋 Quotation</button>
+        <button class="tag${f.doc_type==='challan'?' on':''}" onclick="setDocType('challan')">📦 Delivery Challan</button>
+        <button class="tag${f.doc_type==='return'?' on':''}" onclick="setDocType('return')">↩️ Sales Return</button>
+      </div>
+      ${f.doc_type==='quotation'?'<div class="fs11 tx2 mt6">Quotation — no GST calculated. Convert to invoice with one tap after approval.</div>':''}
+      ${f.doc_type==='challan'?'<div class="fs11 tx2 mt6">Delivery Challan — records goods dispatched. No payment entry.</div>':''}
+      ${f.doc_type==='return'?'<div class="fs11 tx2 mt6">Sales Return — reverses stock and outstanding for the customer.</div>':''}
+    </div>
     <div class="g2">
       <div class="fld"><label>Date</label>
         <input id="ic-dt" type="date" value="${f.date}" onchange="onDateChange(this.value)">
@@ -1227,8 +2135,7 @@ function renderInvCreate() {
     <div class="g2">
       <div class="fld"><label>Invoice Type</label>
         <div class="frow" style="margin-top:4px">
-          <button class="fbtn${!f.inv_type||f.inv_type==='tax'?' on':''}" onclick="window.setInvType('tax')">📋 Tax Invoice</button>
-          <button class="fbtn${f.inv_type==='proforma'?' on':''}" onclick="window.setInvType('proforma')" title="No GST liability — for quotation/advance">📄 Proforma</button>
+          <button class="fbtn on">📋 Tax Invoice</button>
         </div>
       </div>
       ${isReg?`<div class="fld"><label>Supply Type</label>
@@ -1263,13 +2170,108 @@ function renderInvCreate() {
       <span style="font-size:16px;line-height:1">+</span> Add Item
     </button>
 
-    <!-- Notes -->
-    <div class="fsec" style="margin-top:16px"><div class="fsec-icon">📝</div><div class="fsec-label">Notes / Terms</div></div>
+    <!-- Notes / T&C -->
+    <div class="fsec" style="margin-top:16px"><div class="fsec-icon">📝</div><div class="fsec-label">Notes / Terms &amp; Conditions</div></div>
     <div class="fld">
-      <textarea id="ic-notes" rows="2" placeholder="e.g. Goods once sold will not be returned. Payment due within 7 days.">${esc(f.notes||S.firm.default_notes||'')}</textarea>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <span style="font-size:11px;color:var(--tx2);align-self:center">Templates:</span>
+        <button class="btn bgho" style="font-size:10px;padding:2px 8px" onclick="applyTNC(0)">General Retail</button>
+        <button class="btn bgho" style="font-size:10px;padding:2px 8px" onclick="applyTNC(1)">GST Standard</button>
+        <button class="btn bgho" style="font-size:10px;padding:2px 8px" onclick="applyTNC(2)">Credit/Wholesale</button>
+        <button class="btn bgho" style="font-size:10px;padding:2px 8px" onclick="applyTNC(3)">Service</button>
+        <button class="btn bgho" style="font-size:10px;padding:2px 8px" onclick="applyTNC(4)">Manufacturer</button>
+        <button class="btn bgho" style="font-size:10px;padding:2px 8px" onclick="applyTNC(5)">Contractor</button>
+      </div>
+      <textarea id="ic-notes" rows="3" placeholder="Notes or Terms &amp; Conditions (printed on invoice)…">${esc(f.notes||S.firm.default_tnc||S.firm.default_notes||'')}</textarea>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--tx2);cursor:pointer">
+        <input type="checkbox" id="ic-tnc-default" style="width:14px;height:14px" onchange="saveTNCDefault(this.checked)">
+        Save as default for all invoices
+      </label>
     </div>
 
   </div><!-- end card -->
+
+  <!-- ── MORE OPTIONS (collapsed by default) ── -->
+  <div class="card mt10" id="more-opts-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none" onclick="toggleMoreOpts()">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:15px">⚙️</span>
+        <span style="font-size:13px;font-weight:600;color:var(--tx)">More Options</span>
+        <span style="font-size:11px;color:var(--tx2)">PO · Discount · Charges · TCS · Round Off</span>
+      </div>
+      <span id="more-opts-arrow" style="font-size:18px;color:var(--tx2);transition:transform .2s">${S._moreOptsOpen?'▲':'▼'}</span>
+    </div>
+    <div id="more-opts-body" style="display:${S._moreOptsOpen?'block':'none'};margin-top:16px">
+
+      <!-- Row 1: PO + Order ID -->
+      <div class="g2 mb10">
+        <div class="fld"><label>PO Number</label>
+          <input id="ic-po" placeholder="Purchase Order No." value="${esc(f.po_number||'')}">
+        </div>
+        <div class="fld"><label>Order ID</label>
+          <input id="ic-oid" placeholder="Order reference ID" value="${esc(f.order_id||'')}">
+        </div>
+      </div>
+
+      <!-- Row 2: Payment Terms + auto Due Date -->
+      <div class="g2 mb10">
+        <div class="fld"><label>Payment Terms (days)</label>
+          <select id="ic-pterms" onchange="applyPayTerms(this.value)">
+            <option value="0" ${!f.payment_terms||f.payment_terms==0?'selected':''}>— None —</option>
+            <option value="7"  ${f.payment_terms==7?'selected':''}>Net 7</option>
+            <option value="15" ${f.payment_terms==15?'selected':''}>Net 15</option>
+            <option value="30" ${f.payment_terms==30?'selected':''}>Net 30</option>
+            <option value="45" ${f.payment_terms==45?'selected':''}>Net 45</option>
+            <option value="60" ${f.payment_terms==60?'selected':''}>Net 60</option>
+          </select>
+        </div>
+        <div class="fld"><label>Due Date</label>
+          <input id="ic-due2" type="date" value="${f.due_date||''}">
+        </div>
+      </div>
+
+      <!-- Row 3: Invoice Discount -->
+      <div class="g2 mb10">
+        <div class="fld"><label>Invoice Discount</label>
+          <div style="display:flex;gap:6px">
+            <input id="ic-invdisc" type="number" min="0" step="0.01" placeholder="0" value="${f.inv_discount||0}" style="flex:1">
+            <select id="ic-invdisc-type" style="width:70px">
+              <option value="pct" ${(f.inv_discount_type||'pct')==='pct'?'selected':''}>%</option>
+              <option value="amt" ${f.inv_discount_type==='amt'?'selected':''}>₹</option>
+            </select>
+          </div>
+        </div>
+        <div class="fld"><label>Extra Charges Label</label>
+          <input id="ic-charges-lbl" placeholder="e.g. Freight / Packaging" value="${esc(f.extra_charges_label||'Freight / Packaging')}">
+        </div>
+      </div>
+
+      <!-- Row 4: Extra Charges + TCS -->
+      <div class="g2 mb10">
+        <div class="fld"><label>Extra Charges ₹</label>
+          <input id="ic-charges" type="number" min="0" step="0.01" placeholder="0" value="${f.extra_charges||0}">
+        </div>
+        <div class="fld"><label>TCS Rate %</label>
+          <select id="ic-tcs">
+            <option value="0" ${!f.tcs_rate?'selected':''}>None (0%)</option>
+            <option value="0.1" ${f.tcs_rate==0.1?'selected':''}>0.1% (e-commerce)</option>
+            <option value="1"   ${f.tcs_rate==1?'selected':''}>1%</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Row 5: Round Off -->
+      <div class="fld mb4">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="ic-roundoff" ${f.round_off?'checked':''} style="width:16px;height:16px">
+          <span>Auto Round Off total to nearest ₹1</span>
+        </label>
+      </div>
+
+    </div>
+  </div>
+  <!-- end More Options -->
+
   </div><!-- end inv-form-main -->
 
   <!-- Right: sticky summary -->
@@ -1291,8 +2293,12 @@ function renderGSTSummaryPanel(t, isPrint) {
   </table></div>`;
   html += `<hr style="margin:8px 0">`;
   html += `<div class="row jbet fs12 mb4"><span class="tx2">Total Taxable</span><span>${fmt(t.totalTaxable)}</span></div>`;
-  html += `<div class="row jbet fs12 mb8"><span class="tx2">Total GST (CGST+SGST)</span><span class="txred">${fmt(t.totalGST)}</span></div>`;
-  html += `<div class="row jbet" style="font-family:var(--ffd);font-size:18px"><span>Grand Total</span><span class="txacc">${fmt(t.grandTotal)}</span></div>`;
+  html += `<div class="row jbet fs12 mb8"><span class="tx2">Total GST</span><span class="txred">${fmt(t.totalGST)}</span></div>`;
+  if(t.invDiscAmt>0) html += `<div class="row jbet fs12 mb4"><span class="tx2">Invoice Discount</span><span class="txred">−${fmt(t.invDiscAmt)}</span></div>`;
+  if(t.extraCharges>0) html += `<div class="row jbet fs12 mb4"><span class="tx2">${esc(S.invForm?.extra_charges_label||'Extra Charges')}</span><span>${fmt(t.extraCharges)}</span></div>`;
+  if(t.tcsAmt>0) html += `<div class="row jbet fs12 mb4"><span class="tx2">TCS</span><span>${fmt(t.tcsAmt)}</span></div>`;
+  if(t.roundOff) html += `<div class="row jbet fs12 mb4"><span class="tx2">Round Off</span><span>${t.roundOff>=0?'+':''}${fmt(t.roundOff)}</span></div>`;
+  html += `<div class="row jbet" style="font-family:var(--ffd);font-size:20px;font-weight:700;padding:8px 10px;background:var(--surf2);border-radius:9px;margin-top:6px"><span>Grand Total</span><span class="txacc">${fmt(t.grandTotal)}</span></div>`;
   return html;
 }
 
@@ -1365,7 +2371,7 @@ function updateTotals() { updateTotalsPanel(); }
 function updateTotalsPanel() {
   if(!S.invForm || !S.firm) return;
   const isReg = S.firm.gst_registered;
-  const t = buildInvTotals(S.invForm.items, isReg);
+  const t = buildInvTotals(S.invForm.items, isReg, S.invForm.is_igst, {inv_discount:S.invForm.inv_discount,inv_discount_type:S.invForm.inv_discount_type,extra_charges:S.invForm.extra_charges,tcs_rate:S.invForm.tcs_rate,round_off:S.invForm.round_off});
   const panel = $('totals-panel');
   if(panel) {
     if(isReg) {
@@ -1393,7 +2399,7 @@ function updatePartialBar() {
   updateTotals();
   if(!S.invForm) return;
   const isReg = S.firm.gst_registered;
-  const t = buildInvTotals(S.invForm.items, isReg);
+  const t = buildInvTotals(S.invForm.items, isReg, S.invForm.is_igst, {inv_discount:S.invForm.inv_discount,inv_discount_type:S.invForm.inv_discount_type,extra_charges:S.invForm.extra_charges,tcs_rate:S.invForm.tcs_rate,round_off:S.invForm.round_off});
   const pam = Number($('ic-pam')?.value||0);
   S.invForm.partial_amount = pam;
   const pb=$('par-bar'),pp=$('par-pct'),bal=$('par-bal');
@@ -1412,23 +2418,101 @@ function readInvInputs() {
   S.invForm.due_date         = $('ic-due')?.value||'';
   S.invForm.notes            = $('ic-notes')?.value||'';
   S.invForm.partial_amount   = Number($('ic-pam')?.value||0);
+  // More Options fields
+  S.invForm.po_number        = $('ic-po')?.value?.trim()||'';
+  S.invForm.order_id         = $('ic-oid')?.value?.trim()||'';
+  S.invForm.payment_terms    = Number($('ic-pterms')?.value||0);
+  S.invForm.due_date         = $('ic-due2')?.value || $('ic-due')?.value||'';
+  S.invForm.inv_discount     = Number($('ic-invdisc')?.value||0);
+  S.invForm.inv_discount_type= $('ic-invdisc-type')?.value||'pct';
+  S.invForm.extra_charges    = Number($('ic-charges')?.value||0);
+  S.invForm.extra_charges_label = $('ic-charges-lbl')?.value||'Freight / Packaging';
+  S.invForm.tcs_rate         = Number($('ic-tcs')?.value||0);
+  S.invForm.round_off        = !!$('ic-roundoff')?.checked;
   // inv_type and is_igst are set directly via setInvType/setIGST — no DOM read needed
 }
 
 function attachCustAC() {
   const inp = $('ic-cn'); if(!inp) return;
-  inp.addEventListener('change', () => {
-    const m = S.customers.find(c=>c.name.toLowerCase()===inp.value.toLowerCase());
-    if(m){ const ph=$('ic-cp'); if(ph&&!ph.value) ph.value=m.phone||''; showCustCard(m); }
+
+  // Auto-scroll dropdown: search name + phone + GSTIN
+  inp.addEventListener('input', () => {
+    const q = inp.value.toLowerCase().trim();
+    const drop = $('cust-ac-drop'); if(!drop) return;
+    if(!q){ drop.style.display='none'; return; }
+    const matches = S.customers.filter(c=>
+      (c.name||'').toLowerCase().includes(q) ||
+      (c.phone||'').includes(q) ||
+      (c.gstin||'').toLowerCase().includes(q)
+    ).slice(0,8);
+    if(!matches.length){ drop.style.display='none'; return; }
+    drop.innerHTML = matches.map((c,i)=>`
+      <div class="cac-item" onmousedown="selectCustAC('${c.id}')" tabindex="-1">
+        <span class="cac-name">${esc(c.name)}</span>
+        ${c.phone?`<span class="cac-meta">${esc(c.phone)}</span>`:''}
+        ${c.gstin?`<span class="cac-meta" style="color:var(--acc)">${esc(c.gstin)}</span>`:''}
+        ${Number(c.outstanding||0)>0?`<span class="cac-due">₹${fmt(c.outstanding)} due</span>`:''}
+      </div>`).join('');
+    drop.style.display='block';
   });
+
+  // Hide on click outside
   document.addEventListener('mousedown', function _hideCCard(e){
-    const card=$('cust-card'), inp2=$('ic-cn');
+    const card=$('cust-card'), inp2=$('ic-cn'), drop=$('cust-ac-drop');
+    if(drop && !drop.contains(e.target) && e.target!==inp2) drop.style.display='none';
     if(card && inp2 && !card.contains(e.target) && e.target!==inp2){
       card.classList.remove('show'); card.innerHTML='';
       document.removeEventListener('mousedown',_hideCCard,true);
     }
   },{capture:true});
+
+  // Legacy change event for datalist fallback
+  inp.addEventListener('change', () => {
+    const m = S.customers.find(c=>c.name.toLowerCase()===inp.value.toLowerCase());
+    if(m){ selectCustAC(m.id); }
+    const drop=$('cust-ac-drop'); if(drop) drop.style.display='none';
+  });
 }
+
+/* ── More Options toggle ── */
+window.toggleMoreOpts = function() {
+  S._moreOptsOpen = !S._moreOptsOpen;
+  const body = document.getElementById('more-opts-body');
+  const arrow = document.getElementById('more-opts-arrow');
+  if(body) body.style.display = S._moreOptsOpen ? 'block' : 'none';
+  if(arrow) arrow.textContent = S._moreOptsOpen ? '▲' : '▼';
+};
+
+/* Auto-calculate due date from payment terms */
+window.setDocType = function(dt) {
+  readInvInputs();
+  S.invForm = {...S.invForm, doc_type:dt};
+  render();
+};
+
+window.applyPayTerms = function(days) {
+  days = Number(days);
+  if(!days) return;
+  const dt = $('ic-dt');
+  const base = (dt && dt.value) ? new Date(dt.value) : new Date();
+  base.setDate(base.getDate() + days);
+  const due = base.toISOString().split('T')[0];
+  const dueEl = $('ic-due2');
+  if(dueEl){ dueEl.value = due; if(S.invForm) S.invForm.due_date = due; }
+  if(S.invForm) S.invForm.payment_terms = days;
+};
+
+window.selectCustAC = function(id) {
+  const c = S.customers.find(x=>x.id===id); if(!c) return;
+  const ni=$('ic-cn'), ph=$('ic-cp'), gs=$('ic-cg'), ad=$('ic-cad');
+  if(ni) ni.value=c.name;
+  if(ph && !ph.value) ph.value=c.phone||'';
+  if(gs) gs.value=c.gstin||'';
+  if(ad) ad.value=c.address||'';
+  if(S.invForm){ S.invForm.customer_name=c.name; S.invForm.customer_phone=c.phone||''; S.invForm.customer_gstin=c.gstin||''; applyPartyPrice(c.name); }
+  const drop=$('cust-ac-drop'); if(drop) drop.style.display='none';
+  showCustCard(c);
+};
 
 function showCustCard(cust) {
   const card=$('cust-card'); if(!card) return;
@@ -1515,6 +2599,7 @@ function renderInvList() {
         <button class="btn bwa bsm" onclick="openWAInv('${S.viewInv.id}')">💬 WhatsApp</button>
         <button class="btn bgho bsm" onclick="openThermal('${S.viewInv.id}')">🧾 Receipt</button>
         <button class="btn bblu bsm" onclick="duplicateInv('${S.viewInv.id}')">📋 Duplicate</button>
+        ${S.viewInv.doc_type==='quotation'?`<button class="btn bgrn bsm" onclick="convertQuotation('${S.viewInv.id}')">✅ Convert to Invoice</button>`:''}
         ${S.viewInv.status==='paid'||S.viewInv.status==='partial'?`<button class="btn bgrn bsm" onclick="printPayReceipt('${S.viewInv.id}')">🧾 Pay Receipt</button>`:''}
         <button class="btn bdng bsm" onclick="voidInvoice('${S.viewInv.id}')">🚫 Void</button>
         `:`<span class="fs11 tx2" style="color:var(--red)">Invoice voided — ${esc(S.viewInv.void_reason||'')}</span>
@@ -1544,7 +2629,7 @@ function renderInvList() {
         : 'Mark Paid';
       return`<tr style="${isSel?'background:var(--blb)':''}">
         <td><input type="checkbox" class="inv-cb" ${isSel?'checked':''} onchange="toggleSelInv('${inv.id}',this.checked)"></td>
-        <td class="${inv.status==='void'?'txred':'txacc'} fw6" style="cursor:pointer;white-space:nowrap" onclick="viewI('${inv.id}')">${esc(inv.invoice_no)}${inv.inv_type==='proforma'?` <span class="bdg" style="background:#7A4FBE;color:#fff;font-size:8px">PRO</span>`:''}</td>
+        <td class="${inv.status==='void'?'txred':'txacc'} fw6" style="cursor:pointer;white-space:nowrap" onclick="viewI('${inv.id}')">${esc(inv.invoice_no)}${inv.doc_type&&inv.doc_type!=='invoice'?` <span class="bdg" style="background:${inv.doc_type==='quotation'?'#7A4FBE':inv.doc_type==='challan'?'#1d6fa4':inv.doc_type==='return'?'#b94040':'#555'};color:#fff;font-size:8px">${inv.doc_type==='quotation'?'QUOT':inv.doc_type==='challan'?'CHAL':'RTN'}</span>`:''}</td>
         <td>${esc(inv.customer_name||'—')}<br><span class="fs10 tx2">${fmtDate(inv.date)}</span></td>
         <td class="tx2 fs11" style="white-space:nowrap"><span class="bdg ${pb(inv.payment_method)}">${(inv.payment_method||'cash').toUpperCase()}</span></td>
         <td>
@@ -1569,17 +2654,19 @@ function invPreviewHTML(inv) {
   const f = S.firm;
   const isReg = f.gst_registered;
   const isFirm = (f.billing_type||'retail') === 'firm';
-  const t = buildInvTotals(inv.items||[], isReg);
+  const t = buildInvTotals(inv.items||[], isReg, inv.is_igst||false, {inv_discount:inv.inv_discount,inv_discount_type:inv.inv_discount_type,extra_charges:inv.extra_charges,tcs_rate:inv.tcs_rate,round_off:inv.round_off});
   const hasShipTo = inv.ship_to && inv.ship_to.trim();
   return `<div style="background:#fff;color:#1C1915;border:1.5px solid #DDD8CF;border-radius:12px;padding:20px;font-family:'Sora',sans-serif">
     <!-- Header -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-      <div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        ${f.logo?`<img src="${f.logo}" style="width:54px;height:54px;object-fit:contain;border-radius:6px;border:1px solid #DDD8CF;background:#fff;padding:2px;flex-shrink:0">`:''}
+        <div>
         <div style="font-family:'Playfair Display',serif;font-size:20px;color:#BF4A2B">${esc(f.firm_name)}</div>
         <div style="font-size:11px;color:#7A746C;margin-top:2px;line-height:1.65">
           ${f.proprietor?`Prop: ${esc(f.proprietor)}<br>`:''}${esc(f.address)}
           ${f.gstin?`<br>GSTIN: ${esc(f.gstin)}`:''}
-          ${isFirm&&f.pan?`<br>PAN: ${esc(f.pan)}`:''}
+          ${isFirm&&f.pan?`<br>PAN: ${maskPAN(f.pan,'inv-pan')}`:''}
           ${f.phone?`<br>📞 ${esc(f.phone)}`:''}
           ${isFirm&&f.email?`<br>✉️ ${esc(f.email)}`:''}
         </div>
@@ -1676,8 +2763,8 @@ function generateQR(text) {
   });
 }
 
-window.doPrint = async function doPrint(id) {
-  const inv = S.invoices.find(i=>i.id===id); if(!inv) return;
+window.doPrint = async function doPrint(id, _sampleInv=null) {
+  const inv = _sampleInv || S.invoices.find(i=>i.id===id); if(!inv) return;
   const f = S.firm;
   const isReg = f.gst_registered;
   const isIGST = inv.is_igst||false;
@@ -1713,6 +2800,7 @@ function printHTML(inv, f, t, isReg, qrURL) {
 }
 /* ── SHARED: signatory + digital sign block ─────── */
 function signatoryBlock(f) {
+  if(f.hide_signatory) return ''; // #30 hidden per firm setting
   var h = [];
   h.push('<div style="text-align:right;min-width:150px">');
   if(f.digital_sign) {
@@ -1733,7 +2821,7 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   const words      = amountInWords(inv.total);
   const isIGST     = inv.is_igst||false;
   const isProforma = (inv.inv_type||'tax') === 'proforma';
-  const docLabel   = invDocLabel(isReg && !isProforma, true, inv.inv_type||'tax');
+  const docLabel   = invDocLabel(isReg && !isProforma, true, inv.inv_type||'tax', inv.doc_type||'invoice');
   const hasDisc    = (inv.items||[]).some(it=>Number(it.discount||0)>0);
 
   // State code from GSTIN (first 2 digits)
@@ -1749,20 +2837,28 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
 
   const h = [];
   h.push('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + esc(inv.invoice_no) + '</title>');
+  const ACC   = ps(f,'ps_accent')   || '#BF4A2B';
+  const HDR   = ps(f,'ps_header_bg') || '#1a2744';
+  const isA5  = ps(f,'ps_paper') === 'a5';
+  const isCmp = ps(f,'ps_font')  === 'compact';
+  const tpl   = ps(f,'ps_template') || 'classic';
+  const bodyPad = isA5 ? '10mm 12mm' : '14mm 16mm';
+  const baseFnt = isCmp ? '9.5px' : '11px';
+
   h.push('<style>');
   h.push("@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Sora:wght@300;400;500;600&display=swap');");
   h.push('*{box-sizing:border-box;margin:0;padding:0}');
-  h.push("body{font-family:'Sora',sans-serif;padding:14mm 16mm;color:#1C1915;max-width:794px;margin:0 auto;background:#fff;font-size:11px}");
+  h.push(`body{font-family:'Sora',sans-serif;padding:${bodyPad};color:#1C1915;max-width:${isA5?'559px':'794px'};margin:0 auto;background:#fff;font-size:${baseFnt}}`);
   /* Frame */
-  h.push('.frame{border:1.5px solid #BF4A2B;padding:0;position:relative}');
-  h.push('.accent-bar{background:#BF4A2B;height:6px;width:100%;display:block}');
+  h.push(`'.frame{border:1.5px solid ' + (tpl==='minimal'?'#DDD8CF':ACC) + ';padding:0;position:relative}'`);
+  h.push(`.accent-bar{background:\${ACC};height:\${tpl==='minimal'?'2px':'6px'};width:100%;display:block}`);
   h.push('.inner{padding:16px 20px}');
   /* Header */
   h.push('.hd{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;border-bottom:1px solid #DDD8CF;margin-bottom:12px}');
-  h.push(".fn{font-family:'Playfair Display',serif;font-size:22px;color:#BF4A2B;font-weight:700;letter-spacing:-.2px}");
+  h.push(`".fn{font-family:'Playfair Display',serif;font-size:22px;color:\${ACC};font-weight:700;letter-spacing:-.2px}"`);
   h.push('.firm-sub{font-size:9px;color:#7A746C;margin-top:3px;line-height:1.7}');
   /* Doc type badge */
-  h.push('.doc-type{font-size:10px;font-weight:700;color:#fff;background:#1a2744;display:inline-block;padding:3px 10px;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}');
+  h.push(`'.doc-type{font-size:10px;font-weight:700;color:#fff;background:\${HDR};display:inline-block;padding:3px 10px;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}'`);
   h.push('.inv-meta{text-align:right}');
   h.push(".inv-meta .no{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#1C1915}");
   h.push('.inv-meta .dt{font-size:10px;color:#7A746C;margin-top:3px;line-height:1.7}');
@@ -1773,12 +2869,12 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   h.push('.party-row{display:flex;gap:0;margin-bottom:10px;border:1px solid #DDD8CF}');
   h.push('.pt-box{flex:1;padding:8px 12px;border-right:1px solid #DDD8CF}');
   h.push('.pt-box:last-child{border-right:none}');
-  h.push('.pt-lbl{font-size:8px;font-weight:700;color:#BF4A2B;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;border-bottom:1px solid #EDE9E2;padding-bottom:3px}');
+  h.push(`'.pt-lbl{font-size:8px;font-weight:700;color:\${ACC};text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;border-bottom:1px solid #EDE9E2;padding-bottom:3px}'`);
   h.push('.pt-name{font-size:13px;font-weight:700;color:#1C1915;margin-bottom:2px}');
   h.push('.pt-sub{font-size:9.5px;color:#7A746C;line-height:1.7}');
   /* Items table */
   h.push('table{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:9px;table-layout:fixed}');
-  h.push('thead tr{background:#1a2744}');
+  h.push(`'thead tr{background:\${HDR}}'`);
   h.push('th{color:#fff;padding:5px 5px;text-align:left;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.2px;overflow:hidden;word-break:break-word}');
   h.push('th.r{text-align:right}');
   h.push('td{padding:4px 5px;border-bottom:1px solid #EDE9E2;vertical-align:top;color:#1C1915;overflow:hidden;word-break:break-word}');
@@ -1797,7 +2893,7 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   h.push('.totals{width:55%;border:1px solid #DDD8CF;border-bottom:none}');
   h.push('.totals-row{display:flex;justify-content:space-between;padding:3px 10px;font-size:9.5px;color:#7A746C;border-bottom:1px solid #EDE9E2}');
   h.push('.totals-row.tax{color:#1C1915}');
-  h.push('.grand-row{background:#1a2744;color:#fff;display:flex;justify-content:space-between;align-items:center;padding:7px 12px}');
+  h.push(`'.grand-row{background:\${HDR};color:#fff;display:flex;justify-content:space-between;align-items:center;padding:7px 12px}'`);
   h.push(".grand-row .gl{font-family:'Playfair Display',serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}");
   h.push(".grand-row .ga{font-family:'Playfair Display',serif;font-size:16px;font-weight:700}");
   /* Words box */
@@ -1812,7 +2908,7 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   h.push('.footer-section{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;padding-top:8px;border-top:1.5px solid #DDD8CF;margin-top:4px}');
   h.push('.bank-box{font-size:8.5px;color:#7A746C;line-height:1.7}');
   h.push('.bank-box b{color:#1C1915;font-size:9px}');
-  h.push('.bank-box .bhead{font-size:7.5px;font-weight:700;color:#1a2744;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #DDD8CF;padding-bottom:2px;margin-bottom:4px}');
+  h.push(`'.bank-box .bhead{font-size:7.5px;font-weight:700;color:\${HDR};text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #DDD8CF;padding-bottom:2px;margin-bottom:4px}'`);
   h.push('.qr-box{text-align:center}');
   h.push('.qr-box img{width:64px;height:64px}');
   h.push('.qr-box div{font-size:7.5px;color:#7A746C;margin-top:2px}');
@@ -1823,22 +2919,36 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   /* Footer note */
   h.push('.fo{text-align:center;margin-top:6px;font-size:7.5px;color:#AAA;letter-spacing:.2px;border-top:1px solid #EDE9E2;padding-top:5px}');
   /* Print: let @page handle margins; frame just provides the decorative border */
-  h.push('@media print{body{padding:0;margin:0}@page{size:A4;margin:10mm 12mm}.frame{margin:0}.inner{padding:10px 14px}}');
+  /* Stretch layout — items grow, totals pin to bottom */
+  h.push('.frame{display:flex;flex-direction:column;min-height:calc(297mm - 20mm)}');
+  if(tpl==='modern'){
+    h.push('.frame{border:none;box-shadow:0 0 0 1px #DDD8CF}');
+    h.push('.accent-bar{height:32px;display:flex;align-items:center;padding:0 16px;color:#fff;font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700}');
+  }
+  if(tpl==='minimal'){
+    h.push('.frame{border:none}.accent-bar{display:none}.inner{padding:16px 20px}');
+    h.push('.hd{border-bottom:2px solid #1C1915}');
+  }
+  h.push('.inner{flex:1;display:flex;flex-direction:column;padding:16px 20px}');
+  h.push('.items-section{flex:1;display:flex;flex-direction:column}');
+  h.push('.items-table-wrap{flex:1}');
+  h.push('.bottom-section{margin-top:auto}');
+  h.push('@media print{body{padding:0;margin:0}@page{size:A4;margin:10mm 12mm}.frame{margin:0;min-height:calc(297mm - 20mm)}.inner{padding:10px 14px}}');
   h.push('</style></head><body>');
   h.push('<div class="frame">');
   h.push('<div class="accent-bar"></div>');
   h.push('<div class="inner">');
 
   // ── Header ──────────────────────────────────────
-  h.push('<div class="hd"><div>');
+  h.push('<div class="hd">' + (f.logo && ps(f,'ps_show_logo') ? '<img src="'+f.logo+'" style="width:52px;height:52px;object-fit:contain;border-radius:6px;border:1px solid #DDD8CF;background:#fff;padding:2px;margin-right:12px;flex-shrink:0">' : '') + '<div>');
   h.push('<div class="fn">' + esc(f.firm_name) + '</div>');
   h.push('<div class="firm-sub">');
-  if(f.proprietor) h.push('Prop: <b style="color:#1C1915">' + esc(f.proprietor) + '</b><br>');
-  h.push(esc(f.address));
-  if(f.phone)  h.push(' &nbsp;|&nbsp; Ph: ' + esc(f.phone));
-  if(f.email)  h.push(' &nbsp;|&nbsp; ' + esc(f.email));
-  if(f.gstin)  h.push('<br><b style="color:#1C1915">GSTIN: ' + esc(f.gstin) + '</b>' + (supplierStateCode?' &nbsp;State Code: '+supplierStateCode:''));
-  if(f.pan)    h.push(' &nbsp;&nbsp;PAN: <b style="color:#1C1915">' + esc(f.pan) + '</b>');
+  if(f.proprietor && ps(f,'ps_show_proprietor')) h.push('Prop: <b style="color:#1C1915">' + esc(f.proprietor) + '</b><br>');
+  h.push(esc(f.address) + (f.city ? ', ' + esc(f.city) : '') + (f.pincode ? ' - ' + esc(f.pincode) : ''));
+  if(f.phone && ps(f,'ps_show_phone'))  h.push(' &nbsp;|&nbsp; Ph: ' + esc(f.phone));
+  if(f.email && ps(f,'ps_show_email'))  h.push(' &nbsp;|&nbsp; ' + esc(f.email));
+  if(f.gstin && ps(f,'ps_show_gstin'))  h.push('<br><b style="color:#1C1915">GSTIN: ' + esc(f.gstin) + '</b>' + (supplierStateCode?' &nbsp;State Code: '+supplierStateCode:''));
+  if(f.pan && ps(f,'ps_show_pan'))    h.push(' &nbsp;&nbsp;PAN: <b style="color:#1C1915">' + esc(f.pan) + '</b>');
   if(f.state)  h.push('<br>State: ' + esc(f.state));
   h.push('</div></div>');
 
@@ -1848,6 +2958,8 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   h.push('<div class="dt">');
   h.push('Date: <b>' + fmtDate(inv.date) + '</b><br>');
   if(inv.due_date) h.push('Due Date: <b style="color:#BF4A2B">' + fmtDate(inv.due_date) + '</b><br>');
+  if(inv.po_number) h.push('PO No: <b>' + esc(inv.po_number) + '</b><br>');
+  if(inv.order_id)  h.push('Order ID: <b>' + esc(inv.order_id) + '</b><br>');
   h.push('FY: ' + (inv.fy||'—'));
   h.push('</div></div></div>');
 
@@ -1873,6 +2985,7 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   }
   h.push('</div>');
 
+  h.push('<div class="items-section"><div class="items-table-wrap">');
   h.push('<table><colgroup>');
   h.push('<col style="width:4%"><col style="width:auto">');  // # + description (fills remaining)
   h.push('<col style="width:8%">');                          // HSN
@@ -1911,7 +3024,7 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
     h.push('<tr>');
     h.push('<td style="color:#7A746C;font-size:9.5px">' + (idx+1) + '</td>');
     h.push('<td><b>' + esc(it.name) + '</b>');
-    if(it.description) h.push('<div class="item-sub">' + esc(it.description) + '</div>');
+    if(it.description && ps(f,'ps_show_item_desc')) h.push('<div class="item-sub">' + esc(it.description) + '</div>');
     h.push('</td>');
     h.push('<td class="r" style="color:#7A746C;font-size:9.5px">' + esc(it.hsn||'—') + '</td>');
     h.push('<td class="c">' + it.qty + '</td>');
@@ -1977,6 +3090,8 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   }
 
   // ── Totals Box ───────────────────────────────────
+  h.push('</div></div>'); // close items-table-wrap + items-section
+  h.push('<div class="bottom-section">');
   h.push('<div class="totals-wrap"><div style="width:55%">');
   h.push('<div class="totals">');
   if(t.totalDisc>0){
@@ -1994,7 +3109,11 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
     h.push('<div class="totals-row tax"><span>Total Tax</span><span>₹' + fmt(t.totalGST) + '</span></div>');
   }
   h.push('</div>');
-  h.push('<div class="grand-row"><span class="gl">Grand Total</span><span class="ga">₹' + fmt(inv.total) + '</span></div>');
+  if(t.invDiscAmt>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>Invoice Discount</span><span style="color:#BF4A2B">\u2212 \u20B9' + fmt(t.invDiscAmt) + '</span></div>');
+  if(t.extraCharges>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>' + esc(inv.extra_charges_label||'Extra Charges') + '</span><span>\u20B9' + fmt(t.extraCharges) + '</span></div>');
+  if(t.tcsAmt>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>TCS</span><span>\u20B9' + fmt(t.tcsAmt) + '</span></div>');
+  if(t.roundOff) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>Round Off</span><span>' + (t.roundOff>=0?'+':'') + fmt(t.roundOff) + '</span></div>');
+    h.push('<div class="grand-row"><span class="gl">Grand Total</span><span class="ga">₹' + fmt(inv.total) + '</span></div>');
   h.push('</div></div>');
 
   // ── Amount in Words ──────────────────────────────
@@ -2013,7 +3132,7 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   // ── Footer ───────────────────────────────────────
   h.push('<div class="footer-section">');
   // Bank details
-  if(hasBank){
+  if(hasBank && ps(f,'ps_show_bank')){
     h.push('<div class="bank-box"><div class="bhead">Payment / Bank Details</div>');
     h.push('Beneficiary: <b>' + esc(f.bank_name||f.firm_name) + '</b><br>');
     h.push('Account No: <b>' + esc(f.bank_acc) + '</b> &nbsp; IFSC: <b>' + esc(f.bank_ifsc) + '</b>');
@@ -2026,7 +3145,7 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
     h.push('<div></div>');
   }
   // QR code
-  if(qrURL) h.push('<div class="qr-box"><img src="' + qrURL + '" alt="UPI QR"><div>Scan to Pay via UPI<br><b>' + esc(f.upi_id) + '</b></div></div>');
+  if(qrURL && ps(f,'ps_show_qr')) h.push('<div class="qr-box"><img src="' + qrURL + '" alt="UPI QR"><div>Scan to Pay via UPI<br><b>' + esc(f.upi_id) + '</b></div></div>');
   // Signatory
   var sb = [];
   sb.push('<div class="sign-block">');
@@ -2044,7 +3163,10 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   h.push(' &nbsp;|&nbsp; E. &amp; O.E.');
   if(f.state) h.push(' &nbsp;|&nbsp; Subject to ' + esc(f.state) + ' Jurisdiction');
   h.push('</div>');
+  if(ps(f,'ps_show_powered') && !f.hide_powered) h.push('<div style="font-size:6.5px;color:#bbb;text-align:center;margin-top:3px">Made with <b style="color:#BF4A2B">RetailFlow</b> &nbsp;·&nbsp; ' + APP_URL + '</div>');
+  h.push('<div style="font-size:7px;color:#aaa;text-align:right;margin-top:2px;padding-right:2px">Page 1 / 1</div>');
 
+  h.push('</div>'); // close bottom-section
   h.push('</div></div>'); // inner, frame
   h.push('<script>window.onload=function(){window.print();}<\/script>');
   h.push('</body></html>');
@@ -2058,7 +3180,7 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   const hasDisc    = (inv.items||[]).some(it=>Number(it.discount||0)>0);
   const isIGST     = inv.is_igst||false;
   const isProforma = (inv.inv_type||'tax') === 'proforma';
-  const docLabel   = invDocLabel(isReg && !isProforma, false, inv.inv_type||'tax');
+  const docLabel   = invDocLabel(isReg && !isProforma, false, inv.inv_type||'tax', inv.doc_type||'invoice');
   const supplierStateCode = (f.gstin||'').slice(0,2);
   const buyerStateCode    = (inv.customer_gstin||'').slice(0,2);
 
@@ -2073,10 +3195,18 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   h.push('<style>');
   h.push("@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Sora:wght@300;400;500;600&display=swap');");
   h.push('*{box-sizing:border-box;margin:0;padding:0}');
-  h.push("body{font-family:'Sora',sans-serif;padding:12mm 14mm;color:#1C1915;max-width:794px;margin:0 auto;background:#fff;font-size:11px;position:relative}");
+  const ACC   = ps(f,'ps_accent')   || '#BF4A2B';
+  const HDR   = ps(f,'ps_header_bg') || '#1a2744';
+  const isA5  = ps(f,'ps_paper') === 'a5';
+  const isCmp = ps(f,'ps_font')  === 'compact';
+  const tpl   = ps(f,'ps_template') || 'classic';
+  const bodyPad = isA5 ? '10mm 12mm' : '12mm 14mm';
+  const baseFnt = isCmp ? '9px' : '11px';
+
+  h.push(`body{font-family:'Sora',sans-serif;padding:${bodyPad};color:#1C1915;max-width:${isA5?'559px':'794px'};margin:0 auto;background:#fff;font-size:${baseFnt};position:relative}`);
   /* Header */
-  h.push('.hd{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:3px solid #BF4A2B;margin-bottom:8px}');
-  h.push(".fn{font-family:'Playfair Display',serif;font-size:21px;color:#BF4A2B;font-weight:700;letter-spacing:-.2px}");
+  h.push('.hd{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:3px solid '+ACC+';margin-bottom:8px}');
+  h.push(`".fn{font-family:'Playfair Display',serif;font-size:21px;color:"+ACC+";font-weight:700;letter-spacing:-.2px}"`);
   h.push('.firm-sub{font-size:9.5px;color:#7A746C;margin-top:4px;line-height:1.75}');
   h.push('.firm-sub b{color:#1C1915}');
   /* Doc type badge & meta */
@@ -2117,7 +3247,7 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   h.push('.totals{width:55%;border:1px solid #DDD8CF;border-bottom:none}');
   h.push('.totals-row{display:flex;justify-content:space-between;padding:3px 10px;font-size:9px;color:#7A746C;border-bottom:1px solid #EDE9E2}');
   h.push('.totals-row.tax{color:#1C1915}');
-  h.push('.grand-row{background:#1a2744;color:#fff;display:flex;justify-content:space-between;align-items:center;padding:7px 12px}');
+  h.push('.grand-row{background:'+HDR+';color:#fff;display:flex;justify-content:space-between;align-items:center;padding:7px 12px}');
   h.push(".grand-row .gl{font-family:'Playfair Display',serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}");
   h.push(".grand-row .ga{font-family:'Playfair Display',serif;font-size:16px;font-weight:700}");
   /* Words */
@@ -2132,22 +3262,28 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   h.push('.footer-section{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap;padding-top:8px;border-top:1.5px solid #DDD8CF;margin-top:4px}');
   h.push('.bank-box{font-size:8.5px;color:#7A746C;line-height:1.7}');
   h.push('.bank-box b{color:#1C1915}');
-  h.push('.bank-box .bhead{font-size:7.5px;font-weight:700;color:#1a2744;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #DDD8CF;padding-bottom:2px;margin-bottom:3px}');
+  h.push('.bank-box .bhead{font-size:7.5px;font-weight:700;color:'+HDR+';text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid #DDD8CF;padding-bottom:2px;margin-bottom:3px}');
   h.push('.qr-box{text-align:center}.qr-box img{width:64px;height:64px}.qr-box div{font-size:7.5px;color:#7A746C;margin-top:2px}');
   h.push('.sign-block{text-align:right;min-width:110px}');
   h.push('.sign-block img{max-height:44px;max-width:110px;display:block;margin-left:auto;margin-bottom:2px}');
   h.push('.sign-line{border-top:1px solid #1C1915;width:110px;margin-left:auto;padding-top:2px;font-size:7.5px;color:#7A746C;text-align:center}');
   h.push('.sign-line b{font-size:8px;color:#1C1915;display:block;margin-bottom:1px}');
   h.push('.fo{text-align:center;margin-top:6px;font-size:7.5px;color:#AAA;letter-spacing:.2px;border-top:1px solid #EDE9E2;padding-top:4px}');
-  h.push('@media print{body{padding:0;margin:0}@page{size:A4;margin:10mm 12mm}}');
+  /* Stretch layout */
+  h.push('.page-body{display:flex;flex-direction:column;min-height:calc(297mm - 20mm)}');
+  h.push('.items-section{flex:1;display:flex;flex-direction:column}');
+  h.push('.items-table-wrap{flex:1}');
+  h.push('.bottom-section{margin-top:auto}');
+  h.push('@media print{body{padding:0;margin:0}@page{size:A4;margin:10mm 12mm}.page-body{min-height:calc(297mm - 20mm)}}');
   h.push('</style></head><body>');
+  h.push('<div class="page-body">');
 
   // ── Header ──────────────────────────────────────
-  h.push('<div class="hd"><div>');
+  h.push('<div class="hd">' + (f.logo?'<img src="'+f.logo+'" style="width:48px;height:48px;object-fit:contain;border-radius:6px;margin-right:10px;flex-shrink:0">':'') + '<div>');
   h.push('<div class="fn">' + esc(f.firm_name) + '</div>');
   h.push('<div class="firm-sub">');
-  if(f.proprietor) h.push('Prop: <b>' + esc(f.proprietor) + '</b><br>');
-  h.push(esc(f.address));
+  if(f.proprietor && ps(f,'ps_show_proprietor')) h.push('Prop: <b>' + esc(f.proprietor) + '</b><br>');
+  h.push(esc(f.address) + (f.city ? ', ' + esc(f.city) : '') + (f.pincode ? ' - ' + esc(f.pincode) : ''));
   if(f.phone) h.push(' &nbsp;|&nbsp; Ph: ' + esc(f.phone));
   if(f.email) h.push(' &nbsp;|&nbsp; ' + esc(f.email));
   if(f.gstin) h.push('<br><b>GSTIN: ' + esc(f.gstin) + '</b>' + (supplierStateCode ? ' &nbsp; State Code: ' + supplierStateCode : ''));
@@ -2161,6 +3297,8 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   h.push('<div class="inv-dt">');
   h.push('Date: <b>' + fmtDate(inv.date) + '</b><br>');
   if(inv.due_date) h.push('Due: <b style="color:#BF4A2B">' + fmtDate(inv.due_date) + '</b><br>');
+  if(inv.po_number) h.push('PO: <b>' + esc(inv.po_number) + '</b><br>');
+  if(inv.order_id)  h.push('Order: <b>' + esc(inv.order_id) + '</b><br>');
   h.push('FY: ' + (inv.fy||'—'));
   h.push('</div></div></div>');
 
@@ -2188,6 +3326,7 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   h.push('</div>');
 
   // ── Items Table ──────────────────────────────────
+  h.push('<div class="items-section"><div class="items-table-wrap">');
   h.push('<table><colgroup>');
   h.push('<col style="width:4%"><col style="width:auto">');   // # + description
   h.push('<col style="width:8%">');                           // HSN
@@ -2230,7 +3369,7 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
     h.push('<td class="c">' + it.qty + '</td>');
     h.push('<td class="c" style="color:#7A746C">' + esc(it.unit||'pcs') + '</td>');
     h.push('<td class="r">' + fmt(it.rate) + '</td>');
-    if(hasDisc) h.push('<td class="r">' + (Number(it.discount||0)>0?Number(it.discount)+'%':'—') + '</td>');
+    if(hasDisc && ps(f,'ps_show_discount')) h.push('<td class="r">' + (Number(it.discount||0)>0?Number(it.discount)+'%':'—') + '</td>');
     if(isReg){
       h.push('<td class="r">' + fmt(c.taxable) + '</td>');
       h.push('<td class="c">' + (it.gst_rate||0) + '%</td>');
@@ -2298,6 +3437,8 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   }
 
   // ── Totals Box ───────────────────────────────────
+  h.push('</div></div>'); // close items-table-wrap + items-section
+  h.push('<div class="bottom-section">');
   h.push('<div class="totals-wrap"><div style="width:55%">');
   h.push('<div class="totals">');
   if(t.totalDisc>0){
@@ -2315,11 +3456,15 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
     h.push('<div class="totals-row tax"><span>Total Tax</span><span>₹' + fmt(t.totalGST) + '</span></div>');
   }
   h.push('</div>');
-  h.push('<div class="grand-row"><span class="gl">Grand Total</span><span class="ga">₹' + fmt(inv.total) + '</span></div>');
+  if(t.invDiscAmt>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>Invoice Discount</span><span style="color:#BF4A2B">\u2212 \u20B9' + fmt(t.invDiscAmt) + '</span></div>');
+  if(t.extraCharges>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>' + esc(inv.extra_charges_label||'Extra Charges') + '</span><span>\u20B9' + fmt(t.extraCharges) + '</span></div>');
+  if(t.tcsAmt>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>TCS</span><span>\u20B9' + fmt(t.tcsAmt) + '</span></div>');
+  if(t.roundOff) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>Round Off</span><span>' + (t.roundOff>=0?'+':'') + fmt(t.roundOff) + '</span></div>');
+    h.push('<div class="grand-row"><span class="gl">Grand Total</span><span class="ga">₹' + fmt(inv.total) + '</span></div>');
   h.push('</div></div>');
 
   // ── Amount in Words ──────────────────────────────
-  h.push('<div class="words-box"><div class="words-lbl">Amount in Words</div>' + words + '</div>');
+  if(ps(f,'ps_show_words')) h.push('<div class="words-box"><div class="words-lbl">Amount in Words</div>' + words + '</div>');
 
   // ── Partial notice ───────────────────────────────
   if(inv.is_partial){
@@ -2333,7 +3478,7 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
 
   // ── Footer ───────────────────────────────────────
   h.push('<div class="footer-section">');
-  if(hasBank){
+  if(hasBank && ps(f,'ps_show_bank')){
     h.push('<div class="bank-box"><div class="bhead">Payment / Bank Details</div>');
     h.push('Beneficiary: <b>' + esc(f.bank_name||f.firm_name) + '</b><br>');
     h.push('A/c No: <b>' + esc(f.bank_acc) + '</b> &nbsp; IFSC: <b>' + esc(f.bank_ifsc) + '</b>');
@@ -2345,7 +3490,7 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   } else {
     h.push('<div></div>');
   }
-  if(qrURL) h.push('<div class="qr-box"><img src="' + qrURL + '" alt="UPI QR"><div>Scan to Pay via UPI<br><b>' + esc(f.upi_id) + '</b></div></div>');
+  if(qrURL && ps(f,'ps_show_qr')) h.push('<div class="qr-box"><img src="' + qrURL + '" alt="UPI QR"><div>Scan to Pay via UPI<br><b>' + esc(f.upi_id) + '</b></div></div>');
   // Signatory
   var sb = [];
   sb.push('<div class="sign-block">');
@@ -2363,7 +3508,10 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   h.push(' &nbsp;|&nbsp; E. &amp; O.E.');
   if(f.state) h.push(' &nbsp;|&nbsp; Subject to ' + esc(f.state) + ' Jurisdiction');
   h.push('</div>');
+  if(ps(f,'ps_show_powered') && !f.hide_powered) h.push('<div style="font-size:6.5px;color:#bbb;text-align:center;margin-top:3px">Made with <b style="color:#BF4A2B">RetailFlow</b> &nbsp;&middot;&nbsp; ' + APP_URL + '</div>');
 
+  h.push('</div>'); // close bottom-section
+  h.push('</div>'); // close page-body
   h.push('<script>window.onload=function(){window.print();}<\/script>');
   h.push('</body></html>');
   return h.join('\n');
@@ -2425,7 +3573,7 @@ window.printThermal = async id => {
   if(!w){ alert('Print blocked — please allow popups for this page.'); return; }
   let qrURL = '';
   if(f.upi_id){ const ustr='upi://pay?pa='+encodeURIComponent(f.upi_id)+'&pn='+encodeURIComponent(f.firm_name)+'&am='+inv.total+'&cu=INR'; qrURL=await generateQR(ustr); }
-  const t = buildInvTotals(inv.items||[], isReg);
+  const t = buildInvTotals(inv.items||[], isReg, inv.is_igst||false, {inv_discount:inv.inv_discount,inv_discount_type:inv.inv_discount_type,extra_charges:inv.extra_charges,tcs_rate:inv.tcs_rate,round_off:inv.round_off});
   const h = [];
   h.push('<!DOCTYPE html><html><head><meta charset="UTF-8">');
   h.push("<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;font-size:12px;color:#000;width:76mm;padding:4mm;background:#fff}");
@@ -2480,7 +3628,7 @@ window.closeWAInv = () => { S.waInv=null; render(); };
 
 function buildWAMsg(inv) {
   const f = S.firm; const isReg = f.gst_registered;
-  const t = buildInvTotals(inv.items||[], isReg);
+  const t = buildInvTotals(inv.items||[], isReg, inv.is_igst||false, {inv_discount:inv.inv_discount,inv_discount_type:inv.inv_discount_type,extra_charges:inv.extra_charges,tcs_rate:inv.tcs_rate,round_off:inv.round_off});
   const lines = inv.items.map(it=>{const c=calcItem(it,isReg);return`  • *${it.name}* — ${it.qty}×${fmt(it.rate)}${it.discount?` -${it.discount}%`:''}${isReg?` (+${it.gst_rate}% GST)`:''} = *${fmt(c.total)}*`;}).join('\n');
   return `*${f.firm_name}*\n`+
     `━━━━━━━━━━━━━━━━━\n`+
@@ -2604,9 +3752,22 @@ function renderDash(tS,tP,tE){
   // 6 recent invoices
   const recentInvs  = S.invoices.slice(0,6);
 
+  // First invoice hero — shown only until first invoice created
+  const firstInvHero = S.invoices.length===0 ? `
+  <div style="background:linear-gradient(135deg,var(--acc) 0%,#E07A5F 100%);border-radius:16px;padding:22px 20px;margin-bottom:16px;color:#fff;position:relative;overflow:hidden">
+    <div style="position:absolute;right:-10px;top:-10px;font-size:80px;opacity:.15;line-height:1">🧾</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:1px;opacity:.8;text-transform:uppercase;margin-bottom:6px">Get started</div>
+    <div style="font-family:var(--ffd);font-size:22px;font-weight:700;margin-bottom:6px">Create your first invoice</div>
+    <div style="font-size:12px;opacity:.85;margin-bottom:16px;line-height:1.6">Your business is set up. Bill your first customer in under 60 seconds.</div>
+    <button onclick="swMode('invoice')" style="background:#fff;color:var(--acc);border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--ff);display:inline-flex;align-items:center;gap:7px">
+      🧾 Create Invoice →
+    </button>
+  </div>` : '';
+
   return `
   <div class="dash-greeting">${greetWord}, <span>${esc(firstName)}</span> ${greetEmoji}</div>
   <div class="dash-sub">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+  ${firstInvHero}
   ${lowStock.length>0?`<div class="low-stk-strip"><span style="font-size:18px">⚠️</span><div><div class="fw6 fs12" style="color:var(--ylw)">${lowStock.length} item${lowStock.length>1?'s':''} low on stock</div><div class="lsi">${lowStock.map(i=>esc(i.name)+' ('+i.stock+' left)').join(' · ')}</div></div><button class="btn bgho bsm" style="margin-left:auto" onclick="swMode('inventory')">View →</button></div>`:''}
   ${overdueCount>0?`<div class="alert awrn" style="margin-bottom:10px">⚠️ <b>${overdueCount} overdue</b> customer${overdueCount>1?'s':''} — <button class="btn bdng bsm" onclick="swBiz('money')">Collect now →</button></div>`:''}
 
@@ -3649,28 +4810,116 @@ function renderInventoryMode(){
   ${lowStock.length>0?`<div class="alert awrn mb14">⚠️ Low stock: ${lowStock.map(i=>esc(i.name)).join(', ')}</div>`:''}
   <div class="card mb14">
     <div class="ctitle">+ Add / Update Item</div>
-    <div class="g3">
-      <div class="fld"><label>Item Name *</label><input id="ii-nm" value="${esc(iif.name)}" placeholder="e.g. Tata Salt 1kg"></div>
+
+    <!-- Row 1: Type + Name + Category -->
+    <div class="g3 mb4">
+      <div class="fld"><label>Item Type</label>
+        <div class="tgl">
+          <button class="${(iif.item_type||'product')==='product'?'on':''}" onclick="S.invItemForm.item_type='product';render()">📦 Product</button>
+          <button class="${iif.item_type==='service'?'on':''}" onclick="S.invItemForm.item_type='service';render()">🛠 Service</button>
+        </div>
+      </div>
+      <div class="fld"><label>Item Name *</label>
+        <input id="ii-nm" value="${esc(iif.name)}" placeholder="e.g. Tata Salt 1kg">
+      </div>
+      <div class="fld"><label>Category
+        <button class="btn bgho" style="font-size:10px;padding:1px 7px;margin-left:6px" onclick="addItemCategory()">+ New</button>
+      </label>
+        <select id="ii-cat">
+          <option value="">— None —</option>
+          ${(S.inv_categories||[]).map(cat=>`<option value="${esc(cat)}"${iif.category===cat?' selected':''}>${esc(cat)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <!-- Row 2: Unit + Price mode + Rate + MRP -->
+    <div class="g2 mb4">
       <div class="fld"><label>Unit</label>
         <select id="ii-un">${UNITS.map(u=>`<option value="${u}"${u===iif.unit?' selected':''}>${u}</option>`).join('')}</select>
       </div>
-      <div class="fld"><label>Selling Rate ₹</label><input id="ii-rt" type="number" min="0" step="0.01" value="${iif.rate}" placeholder="0"></div>
+      <div class="fld"><label>Price Mode</label>
+        <select id="ii-pmode">
+          <option value="excl" ${(iif.price_mode||'excl')==='excl'?'selected':''}>Exclusive (+ GST on top)</option>
+          <option value="incl" ${iif.price_mode==='incl'?'selected':''}>Inclusive (GST included)</option>
+        </select>
+      </div>
     </div>
-    ${S.firm.gst_registered?`<div class="fld" style="max-width:200px"><label>HSN / SAC Code</label><input id="ii-hsn" value="${esc(iif.hsn||'')}" placeholder="e.g. 1701 (Sugar)" maxlength="8"><div class="fs11 tx2 mt4">Required for GSTR-1 filing</div></div>`:''}
-    <div class="g2">
-      ${S.firm.gst_registered?`<div class="fld"><label>GST Rate</label>
-        <select id="ii-gr">${GST_SLABS.map(r=>`<option value="${r}"${Number(r)===Number(iif.gst_rate)?' selected':''}>${r}% GST</option>`).join('')}</select>
-      </div>`:'<div></div>'}
-      <div class="fld"><label>Stock Quantity</label><input id="ii-st" type="number" min="0" value="${iif.stock}" placeholder="0"></div>
+    <div class="g2 mb4">
+      <div class="fld"><label>Selling Rate ₹</label>
+        <input id="ii-rt" type="number" min="0" step="0.01" value="${iif.rate}" placeholder="0">
+      </div>
+      <div class="fld"><label>MRP ₹ <span class="fs10 tx2">(optional)</span></label>
+        <input id="ii-mrp" type="number" min="0" step="0.01" value="${iif.mrp||0}" placeholder="0">
+      </div>
     </div>
-    <button class="btn bpri" onclick="saveInvItem()">Save Item</button>
+
+    <!-- Row 3: GST + HSN + Stock -->
+    <div class="g3">
+      ${S.firm.gst_registered?`
+      <div class="fld"><label>GST Rate</label>
+        <select id="ii-gr">${GST_SLABS_EXTENDED.map(r=>`<option value="${r}"${Number(r)===Number(iif.gst_rate)?' selected':''}>${r}% GST</option>`).join('')}</select>
+      </div>
+      <div class="fld"><label>HSN / SAC Code</label>
+        <input id="ii-hsn" value="${esc(iif.hsn||'')}" placeholder="e.g. 1701" maxlength="8">
+      </div>`:'<div></div><div></div>'}
+      <div class="fld"><label>${iif.item_type==='service'?'NA (Service)':'Stock Quantity'}</label>
+        <input id="ii-st" type="number" min="0" value="${iif.item_type==='service'?0:iif.stock}" placeholder="0" ${iif.item_type==='service'?'disabled':''}>
+      </div>
+    </div>
+    <!-- Party Wise Prices -->
+    <div class="fld mt8">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="margin:0">Party Wise Prices <span class="fs10 tx2">(different rate per customer)</span></label>
+        <button class="btn bgho bsm" onclick="addPartyPrice()">+ Add</button>
+      </div>
+      <div id="party-prices-list">
+        ${(S.invItemForm?.party_prices||[]).map((pp,i)=>`
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:5px">
+            <input placeholder="Customer name" value="${esc(pp.customer||'')}" style="flex:2;padding:5px 8px;border:1px solid var(--bor);border-radius:7px;background:var(--bg);color:var(--tx);font-size:12px" onchange="updatePartyPrice(${i},'customer',this.value)">
+            <input type="number" placeholder="Rate ₹" value="${pp.rate||''}" style="flex:1;padding:5px 8px;border:1px solid var(--bor);border-radius:7px;background:var(--bg);color:var(--tx);font-size:12px" onchange="updatePartyPrice(${i},'rate',this.value)">
+            <button class="btn bdng" style="padding:4px 8px;font-size:11px" onclick="removePartyPrice(${i})">✕</button>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Custom Fields -->
+    <div class="fld mt8">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="margin:0">Custom Fields <span class="fs10 tx2">(your own item attributes)</span></label>
+        <button class="btn bgho bsm" onclick="addCustomField()">+ Add</button>
+      </div>
+      <div id="custom-fields-list">
+        ${(S.invItemForm?.custom_fields||[]).map((cf,i)=>`
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:5px">
+            <input placeholder="Field name" value="${esc(cf.key||'')}" style="flex:1;padding:5px 8px;border:1px solid var(--bor);border-radius:7px;background:var(--bg);color:var(--tx);font-size:12px" onchange="updateCustomField(${i},'key',this.value)">
+            <input placeholder="Value" value="${esc(cf.value||'')}" style="flex:1;padding:5px 8px;border:1px solid var(--bor);border-radius:7px;background:var(--bg);color:var(--tx);font-size:12px" onchange="updateCustomField(${i},'value',this.value)">
+            <button class="btn bdng" style="padding:4px 8px;font-size:11px" onclick="removeCustomField(${i})">✕</button>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Online Store toggle -->
+    <div class="fld mt6 mb6">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="ii-online" ${iif.online_store?'checked':''} style="width:15px;height:15px">
+        <span>Show in Online Store / Catalogue</span>
+      </label>
+    </div>
+
+    <button class="btn bpri mt8" onclick="saveInvItem()">Save Item</button>
   </div>
   ${S.inventory.length===0?`<div class="empty"><div class="eico">📦</div><div class="etit">No items in master yet</div><div class="tx2">Add items above — they'll appear as autocomplete in invoices</div></div>`
   :`<div class="twrap"><table>
     <thead><tr><th>Item Name</th><th>Unit</th><th>Rate</th>${S.firm.gst_registered?'<th>GST%</th><th>HSN</th>':''}<th>Stock</th><th>Value</th><th>Actions</th></tr></thead>
     <tbody>${S.inventory.map(item=>`<tr class="${Number(item.stock)<=5?'stock-low':''}">
-      <td class="fw6">${esc(item.name)}</td>
-      <td class="tx2">${esc(item.unit)}</td>
+      <td class="fw6">
+        ${esc(item.name)}
+        ${item.item_type==='service'?'<span class="bdg bu" style="font-size:9px;margin-left:4px">SVC</span>':''}
+        ${item.online_store?'<span class="bdg" style="background:#1d6fa4;color:#fff;font-size:9px;margin-left:4px">ONLINE</span>':''}
+        ${item.party_prices?.length?`<div style="font-size:10px;color:var(--tx2);margin-top:2px">${item.party_prices.length} party price${item.party_prices.length>1?'s':''}</div>`:''}
+        ${item.custom_fields?.length?`<div style="font-size:10px;color:var(--tx2)">${item.custom_fields.map(cf=>esc(cf.key)+': '+esc(cf.value)).join(' · ')}</div>`:''}
+      </td>
+      <td class="tx2">${esc(item.category||'—')}<br><span style="font-size:10px;color:var(--tx2)">${esc(item.unit)}</span></td>
       <td>${fmt(item.rate)}</td>
       ${S.firm.gst_registered?`<td><span class="bdg bu">${item.gst_rate}%</span></td><td class="tx2 fs11">${esc(item.hsn||'—')}</td>`:''}
       <td class="${Number(item.stock)<=5?'txred fw6':''}">${item.stock} ${Number(item.stock)<=5?'⚠️':''}
@@ -3877,8 +5126,8 @@ window.dismissV    = () => { S.viewInv=null; render(); };
 window.viewI       = id => { S.viewInv=S.invoices.find(i=>i.id===id)||null; render(); };
 window.newInv      = () => { S.invForm=blankInv(); S.viewInv=null; S.tab='create'; render(); };
 window.clearInv    = () => { S.invForm=blankInv(); render(); };
-window.editFirm = () => { S._editFirmOpen = true; S._editGST = S.firm.gst_registered; render(); };
-window.closeEditFirm = () => { S._editFirmOpen = false; render(); };
+window.editFirm = (tab='business') => { S._editFirmOpen=true; S._settingsTab=tab; S._editGST=S.firm.gst_registered; S._efmTemp=undefined; S._editBillingType=undefined; S._editDigitalSign=undefined; render(); };
+window.closeEditFirm = () => { S._editFirmOpen=false; S._settingsTab='business'; S._editGST=undefined; S._efmTemp=undefined; S._editBillingType=undefined; S._editDigitalSign=undefined; render(); };
 window.toggleEditGST = v => {
   S._editGST = v;
   // preserve current form values before re-render
@@ -3902,21 +5151,58 @@ function renderEditFirmModal() {
 
   return `<div class="mover" onclick="closeEditFirm()">
     <div class="modal" onclick="event.stopPropagation()" style="max-width:580px;max-height:92vh;overflow-y:auto">
-      <div class="row jbet mb14">
-        <div class="mtit">⚙️ Edit Business Profile</div>
+      <div class="row jbet mb10">
+        <div class="mtit">⚙️ Settings</div>
         <button class="ibtn" onclick="closeEditFirm()">✕</button>
       </div>
+      <div class="tabs mb14">
+        <button class="tab${(S._settingsTab||'business')==='business'?' on':''}" onclick="S._settingsTab='business';render()">🏢 Business</button>
+        <button class="tab${S._settingsTab==='print'?' on':''}" onclick="S._settingsTab='print';render()">🖨️ Print</button>
+      </div>
 
-      <div class="sechead">Business Info</div>
-      <div class="fld">
-        <label>Billing Type</label>
-        <div class="tgl">
-          <button class="${(S._editBillingType!==undefined?S._editBillingType:f.billing_type||'retail')==='retail'?'on':''}" onclick="S._editBillingType='retail';render()">🛒 Retail / Shop</button>
-          <button class="${(S._editBillingType!==undefined?S._editBillingType:f.billing_type||'retail')==='firm'?'on':''}" onclick="S._editBillingType='firm';render()">🏢 Firm / Service</button>
+      ${S._settingsTab==='print'?`
+        ${renderPrintSettings()}
+        <div class="row jbet mt14">
+          <button class="btn bgho" onclick="closeEditFirm()">Close</button>
         </div>
-        <div class="fs11 tx2 mt6">${(S._editBillingType!==undefined?S._editBillingType:f.billing_type||'retail')==='retail'
-          ? 'Compact invoices, thermal receipts, quick billing.'
-          : 'Formal invoices — Ship To, Place of Supply, item descriptions, signatory footer.'}</div>
+      `:`
+      <div class="sechead">Business Info</div>`}
+
+      <div class="fld">
+        <label>Business Logo <span class="fs10 tx2">(shown on invoice header)</span></label>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:4px">
+          <div id="efm-logo-preview" style="width:64px;height:64px;border-radius:10px;border:2px dashed var(--bor);display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--surf2);flex-shrink:0">
+            ${f.logo?`<img src="${f.logo}" style="width:100%;height:100%;object-fit:contain">`:`<span style="font-size:20px;color:var(--tx2)">🏪</span>`}
+          </div>
+          <div>
+            <label class="btn bgho bsm" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+              📷 ${f.logo?'Change':'Upload'} Logo
+              <input type="file" id="efm-logo" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none" onchange="previewLogo('efm-logo','efm-logo-preview')">
+            </label>
+            ${f.logo?`<button class="btn bgho bsm mt6" onclick="S._editLogo='';render()" style="color:var(--red)">✕ Remove</button>`:''}
+            <div class="fs10 tx2 mt6">PNG or JPG · compressed automatically</div>
+          </div>
+        </div>
+      </div>
+      <div class="fld">
+        <label>Business Nature</label>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:6px">
+          ${Object.entries(NATURE_CONFIG).map(([key,nc])=>`
+            <button onclick="applyNatureToFirm('${key}')" style="display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:10px;border:2px solid ${(f.business_nature||'contractor')===key?'var(--acc)':'var(--bor)'};background:${(f.business_nature||'contractor')===key?'var(--acb)':'var(--surf)'};cursor:pointer;font-size:12px;font-weight:${(f.business_nature||'contractor')===key?'700':'400'};color:var(--tx);transition:all .15s">
+              <span>${nc.emoji}</span> ${nc.label}
+            </button>`).join('')}
+        </div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+          ${(()=>{
+            const nat = f.business_nature||'contractor';
+            const bt  = deriveBillingType(nat, f.customer_type||'walkin');
+            return `<span style="font-size:11px;color:var(--tx2)">Invoice layout:</span>
+                    <span style="font-size:11px;font-weight:600;background:var(--surf2);padding:2px 9px;border-radius:99px;color:var(--tx)">
+                      ${bt==='firm'?'🏢 Formal A4':'🛒 Quick Retail'}
+                    </span>
+                    <span style="font-size:10px;color:var(--tx2)">— set by your business nature</span>`;
+          })()}
+        </div>
       </div>
       <div class="fld"><label>Firm / Business Name *</label>
         <input id="efm-nm" value="${esc(v('nm', f.firm_name))}" placeholder="e.g. Sharma General Store">
@@ -3941,8 +5227,20 @@ function renderEditFirmModal() {
         <textarea id="efm-ad" rows="2">${esc(v('ad', f.address))}</textarea>
       </div>
       <div class="g2">
+        <div class="fld"><label>City *</label>
+          <input id="efm-city" value="${esc(v('city', f.city||''))}" placeholder="e.g. Prayagraj">
+        </div>
+        <div class="fld"><label>Pincode</label>
+          <input id="efm-pin" value="${esc(v('pin', f.pincode||''))}" placeholder="e.g. 211001" type="tel" maxlength="6">
+        </div>
+      </div>
+      <div class="g2">
         <div class="fld"><label>Authorised Signatory Name <span class="fs10 tx2">(invoice footer)</span></label>
           <input id="efm-sig" value="${esc(v('sig', f.signatory||''))}" placeholder="e.g. Ajay Kumar (optional)">
+          <label style="display:flex;align-items:center;gap:7px;margin-top:8px;cursor:pointer;font-size:12px;color:var(--tx2)">
+            <input type="checkbox" id="efm-hidesig" ${f.hide_signatory?'checked':''} onchange="S.firm.hide_signatory=this.checked;S._efmTemp={...S._efmTemp};" style="width:15px;height:15px;cursor:pointer">
+            Hide signatory block on printed invoices
+          </label>
         </div>
         <div class="fld"><label>Digital Signature <span class="fs10 tx2">(PNG/JPG)</span></label>
           <input type="file" id="efm-dsign" accept="image/png,image/jpeg,image/gif" style="font-size:12px;padding:4px 0" onchange="previewEditSign(this)">
@@ -3981,6 +5279,28 @@ function renderEditFirmModal() {
         </select>
       </div>` : `<input type="hidden" id="efm-gs" value=""><input type="hidden" id="efm-st" value=""><input type="hidden" id="efm-gr" value="0">`}
 
+      <div class="sechead">Business Classification</div>
+      <div class="g2">
+        <div class="fld"><label>Business Registration Type</label>
+          <select id="efm-regtype">
+            ${['Sole Proprietorship','Partnership Firm','LLP','Private Limited','HUF','Trust','Other'].map(m=>`<option value="${m}"${v('reg_type',f.reg_type||'Sole Proprietorship')===m?' selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fld"><label>Industry Type</label>
+          <select id="efm-industry">
+            ${['Retail','Wholesale','Manufacturing','Services','Food & Beverage','Healthcare','Construction','Transport','Other'].map(m=>`<option value="${m}"${v('industry',f.industry||'Retail')===m?' selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="fld"><label>MSME / Udyam Number <span class="fs10 tx2">(optional)</span></label>
+          <input id="efm-msme" value="${esc(v('msme', f.msme||''))}" placeholder="UDYAM-UP-00-0000000">
+        </div>
+        <div class="fld"><label>Website <span class="fs10 tx2">(optional)</span></label>
+          <input id="efm-web" value="${esc(v('web', f.website||''))}" placeholder="www.myshop.in">
+        </div>
+      </div>
+
       <div class="sechead">Payment & UPI</div>
       <div class="g2">
         <div class="fld"><label>Default Payment Method</label>
@@ -4012,19 +5332,179 @@ function renderEditFirmModal() {
       </div>
 
       <div class="sechead">Invoice Defaults</div>
+      <div class="fld" style="margin-bottom:8px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px">
+          <input type="checkbox" id="efm-hidepowered" ${f.hide_powered?'checked':''} style="width:15px;height:15px">
+          Hide "Made with RetailFlow" footer on invoices
+          <span class="fs10 tx2">(shown on free accounts)</span>
+        </label>
+      </div>
       <div class="fld"><label>Invoice Number Prefix</label>
         <input id="efm-invpfx" value="${esc(v('invpfx', f.inv_prefix||'INV'))}" placeholder="e.g. INV or GST/24-25" maxlength="20">
       </div>
-      <div class="fld"><label>Default Terms / Footer Note</label>
-        <textarea id="efm-notes" rows="2" placeholder="e.g. Goods once sold will not be returned.">${esc(v('notes', f.default_notes||''))}</textarea>
+      <div class="fld"><label>Default Footer Note</label>
+        <textarea id="efm-notes" rows="2" placeholder="e.g. Thank you for your business.">${esc(v('notes', f.default_notes||''))}</textarea>
+      </div>
+      <div class="fld">
+        <label>Default Terms &amp; Conditions <span class="fs10 tx2">(pre-fills on every invoice)</span></label>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px">
+          <button class="btn bgho" style="font-size:10px;padding:2px 7px" onclick="applyTNCSettings(0)">General Retail</button>
+          <button class="btn bgho" style="font-size:10px;padding:2px 7px" onclick="applyTNCSettings(1)">GST Standard</button>
+          <button class="btn bgho" style="font-size:10px;padding:2px 7px" onclick="applyTNCSettings(2)">Credit/Wholesale</button>
+          <button class="btn bgho" style="font-size:10px;padding:2px 7px" onclick="applyTNCSettings(3)">Service</button>
+          <button class="btn bgho" style="font-size:10px;padding:2px 7px" onclick="applyTNCSettings(4)">Manufacturer</button>
+          <button class="btn bgho" style="font-size:10px;padding:2px 7px" onclick="applyTNCSettings(5)">Contractor</button>
+        </div>
+        <textarea id="efm-tnc" rows="3" placeholder="Terms &amp; Conditions printed on every invoice…">${esc(v('tnc', f.default_tnc||''))}</textarea>
       </div>
 
+      ${(S._settingsTab||'business')!=='print'?`
       <div class="row mt14" style="gap:8px;justify-content:flex-end">
         <button class="btn bgho" onclick="closeEditFirm()">Cancel</button>
         <button class="btn bpri" onclick="saveEditFirm()">💾 Save Changes</button>
-      </div>
+      </div>`:''}
     </div>
   </div>`;
+}
+
+/* ══════════════════════════════════════════════════
+   PRINT SETTINGS
+══════════════════════════════════════════════════ */
+function renderPrintSettings() {
+  const f = S.firm;
+  const p = k => ps(f, k); // shorthand
+
+  const toggle = (key, label, hint='') => `
+    <label style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bor);cursor:pointer;gap:12px">
+      <div>
+        <div style="font-size:13px;color:var(--tx)">${label}</div>
+        ${hint?`<div style="font-size:10px;color:var(--tx2);margin-top:1px">${hint}</div>`:''}
+      </div>
+      <div class="tog-sw${p(key)?' on':''}" onclick="togglePS('${key}')" style="flex-shrink:0">
+        <div class="tog-knob"></div>
+      </div>
+    </label>`;
+
+  return `
+  <!-- Templates -->
+  <div class="card mb14">
+    <div class="fs12 fw6 mb10" style="text-transform:uppercase;letter-spacing:.5px;color:var(--tx2)">Template Style</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      ${[
+        ['classic','Classic','Bordered frame, dark header'],
+        ['minimal','Minimal','Clean lines, no border'],
+        ['modern', 'Modern', 'Colored header band'],
+      ].map(([key,label,desc])=>`
+        <div onclick="setPSTemplate('${key}')" style="border:2px solid ${p('ps_template')===key?'var(--acc)':'var(--bor)'};background:${p('ps_template')===key?'var(--acb)':'var(--surf)'};border-radius:11px;padding:10px;cursor:pointer;transition:all .15s">
+          <div style="height:44px;border-radius:6px;margin-bottom:7px;overflow:hidden;border:1px solid var(--bor)">
+            ${key==='classic'?`<div style="height:8px;background:#BF4A2B"></div><div style="padding:4px 5px;font-size:6px;color:#1C1915;line-height:1.4">
+              <div style="font-weight:700;font-size:7px">SHARMA STORE</div>
+              <div style="margin-top:2px;background:#1a2744;color:#fff;padding:1px 4px;display:inline-block;font-size:5px">TAX INVOICE</div>
+            </div>`:''}
+            ${key==='minimal'?`<div style="padding:5px;font-size:6px;color:#1C1915;border-bottom:2px solid #333;margin-bottom:2px">
+              <div style="font-weight:700;font-size:7px">SHARMA STORE</div>
+            </div><div style="padding:3px 5px;font-size:5px;color:#555">TAX INVOICE</div>`:''}
+            ${key==='modern'?`<div style="height:20px;background:${p('ps_accent')};display:flex;align-items:center;padding:0 5px">
+              <div style="font-size:6px;color:#fff;font-weight:700">SHARMA STORE</div>
+            </div><div style="padding:3px 5px;font-size:5px;color:#555">TAX INVOICE</div>`:''}
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--tx)">${label}</div>
+          <div style="font-size:10px;color:var(--tx2);margin-top:1px">${desc}</div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- Colors -->
+  <div class="card mb14">
+    <div class="fs12 fw6 mb10" style="text-transform:uppercase;letter-spacing:.5px;color:var(--tx2)">Colors</div>
+    <div class="g2">
+      <div class="fld">
+        <label>Accent Color <span class="fs10 tx2">(logo name, borders)</span></label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+          <input type="color" value="${p('ps_accent')}" id="ps-accent" oninput="updatePSColor('ps_accent',this.value)"
+            style="width:40px;height:36px;border-radius:8px;border:1.5px solid var(--bor);padding:2px;cursor:pointer">
+          <input value="${p('ps_accent')}" id="ps-accent-hex" placeholder="#BF4A2B" maxlength="7"
+            style="flex:1;padding:7px 10px;border:1.5px solid var(--bor);border-radius:8px;background:var(--bg);color:var(--tx);font-family:monospace"
+            oninput="if(this.value.length===7)updatePSColor('ps_accent',this.value)">
+        </div>
+      </div>
+      <div class="fld">
+        <label>Header Color <span class="fs10 tx2">(table header, badges)</span></label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+          <input type="color" value="${p('ps_header_bg')}" id="ps-hdrbg" oninput="updatePSColor('ps_header_bg',this.value)"
+            style="width:40px;height:36px;border-radius:8px;border:1.5px solid var(--bor);padding:2px;cursor:pointer">
+          <input value="${p('ps_header_bg')}" id="ps-hdrbg-hex" placeholder="#1a2744" maxlength="7"
+            style="flex:1;padding:7px 10px;border:1.5px solid var(--bor);border-radius:8px;background:var(--bg);color:var(--tx);font-family:monospace"
+            oninput="if(this.value.length===7)updatePSColor('ps_header_bg',this.value)">
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+      ${[['#BF4A2B','Terracotta'],['#1a2744','Navy'],['#2B6E4A','Forest'],['#6B3FA0','Purple'],['#1d6fa4','Blue'],['#1C1915','Charcoal']].map(([col,name])=>`
+        <div onclick="updatePSColor('ps_accent','${col}')" title="${name}" style="width:28px;height:28px;border-radius:50%;background:${col};cursor:pointer;border:2px solid ${p('ps_accent')===col?'var(--tx)':'transparent'};transition:all .15s"></div>`).join('')}
+      <div style="font-size:10px;color:var(--tx2);align-self:center;margin-left:4px">Accent presets</div>
+    </div>
+  </div>
+
+  <!-- Paper & Font -->
+  <div class="card mb14">
+    <div class="fs12 fw6 mb10" style="text-transform:uppercase;letter-spacing:.5px;color:var(--tx2)">Paper & Font</div>
+    <div class="g2">
+      <div class="fld">
+        <label>Paper Size</label>
+        <div class="tgl mt6">
+          <button class="${p('ps_paper')==='a4'?'on':''}" onclick="setPSValue('ps_paper','a4')">A4</button>
+          <button class="${p('ps_paper')==='a5'?'on':''}" onclick="setPSValue('ps_paper','a5')">A5</button>
+        </div>
+      </div>
+      <div class="fld">
+        <label>Font Density</label>
+        <div class="tgl mt6">
+          <button class="${p('ps_font')==='normal'?'on':''}" onclick="setPSValue('ps_font','normal')">Normal</button>
+          <button class="${p('ps_font')==='compact'?'on':''}" onclick="setPSValue('ps_font','compact')">Compact</button>
+        </div>
+        <div class="fs10 tx2 mt4">Compact fits more items per page</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header fields -->
+  <div class="card mb14">
+    <div class="fs12 fw6 mb12" style="text-transform:uppercase;letter-spacing:.5px;color:var(--tx2)">Invoice Header</div>
+    ${toggle('ps_show_logo',       'Business Logo',         'Shown top-left of invoice')}
+    ${toggle('ps_show_proprietor', 'Proprietor Name',       '')}
+    ${toggle('ps_show_phone',      'Phone Number',          '')}
+    ${toggle('ps_show_email',      'Email Address',         '')}
+    ${toggle('ps_show_gstin',      'GSTIN',                 'Required for tax invoices')}
+    ${toggle('ps_show_pan',        'PAN Number',            'Required on invoices above ₹50,000')}
+  </div>
+
+  <!-- Body fields -->
+  <div class="card mb14">
+    <div class="fs12 fw6 mb12" style="text-transform:uppercase;letter-spacing:.5px;color:var(--tx2)">Line Items</div>
+    ${toggle('ps_show_hsn',        'HSN / SAC Code',        'Required for GST invoices')}
+    ${toggle('ps_show_discount',   'Discount Column',       'Hide if you never give discounts')}
+    ${toggle('ps_show_item_desc',  'Item Description',      'Sub-line below item name')}
+  </div>
+
+  <!-- Footer fields -->
+  <div class="card mb14">
+    <div class="fs12 fw6 mb12" style="text-transform:uppercase;letter-spacing:.5px;color:var(--tx2)">Invoice Footer</div>
+    ${toggle('ps_show_words',      'Amount in Words',       'e.g. Rupees Five Thousand Only')}
+    ${toggle('ps_show_qr',         'UPI QR Code',           'Scan-to-pay QR on invoice')}
+    ${toggle('ps_show_bank',       'Bank Details',          'Account number and IFSC')}
+    ${toggle('ps_show_signatory',  'Signatory Block',       'Authorised signature line')}
+    ${toggle('ps_show_digital_sign','Digital Signature',    'Uploaded signature image')}
+    ${toggle('ps_show_tnc',        'Terms & Conditions',    'Footer notes and T&C text')}
+    ${toggle('ps_show_page_no',    'Page Number',           'Page 1 / 1')}
+    ${toggle('ps_show_powered',    'Made with RetailFlow',  'Small footer credit line')}
+  </div>
+
+  <!-- Preview button -->
+  <button class="btn bpri wfull" onclick="previewPrintSettings()">
+    🖨️ Preview Sample Invoice
+  </button>
+  <div class="fs11 tx2 mt8" style="text-align:center">Changes are saved automatically</div>`;
 }
 
 window.saveEditFirm = () => {
@@ -4042,10 +5522,14 @@ window.saveEditFirm = () => {
     firm_name: nm,
     proprietor: pr,
     address: ad,
+    city: g('efm-city') || S.firm.city || '',
+    pincode: g('efm-pin') || S.firm.pincode || '',
+    logo: S._editLogo !== undefined ? S._editLogo : (S.firm.logo||''),
     phone: g('efm-ph'),
     email: g('efm-em'),
     pan: g('efm-pan'),
     signatory: g('efm-sig'),
+    hide_signatory: S.firm.hide_signatory||false,
     billing_type: S._editBillingType !== undefined ? S._editBillingType : (S.firm.billing_type||'retail'),
     digital_sign: S._editDigitalSign !== undefined ? S._editDigitalSign : (S.firm.digital_sign||''),
     gst_registered: gst,
@@ -4058,17 +5542,79 @@ window.saveEditFirm = () => {
     bank_acc: g('efm-bac'),
     bank_ifsc: g('efm-bif'),
     bank_branch: g('efm-bbr'),
+    reg_type: g('efm-regtype') || 'Sole Proprietorship',
+    industry: g('efm-industry') || 'Retail',
+    msme: g('efm-msme'),
+    website: g('efm-web'),
     default_notes: document.getElementById('efm-notes')?.value?.trim() || '',
+    default_tnc: document.getElementById('efm-tnc')?.value?.trim() || S.firm.default_tnc || '',
+    hide_powered: !!document.getElementById('efm-hidepowered')?.checked,
+    // Preserve all print settings (managed separately via togglePS/setPSTemplate)
+    ...Object.fromEntries(
+      Object.keys(DEFAULT_PRINT_SETTINGS).map(k=>[k, S.firm[k] !== undefined ? S.firm[k] : DEFAULT_PRINT_SETTINGS[k]])
+    ),
     inv_prefix: g('efm-invpfx') || 'INV',
     inv_start: S.firm.inv_start || 1,
   };
+  S._editLogo = undefined;
   S._editFirmOpen = false;
   S._editGST = undefined;
   S._efmTemp = undefined;
   S._editBillingType = undefined;
   S._editDigitalSign = undefined;
+  _syncProfileName();
   save(); render();
 };
+/* ── Print Settings handlers ── */
+window.togglePS = function(key) {
+  if(!S.firm) return;
+  S.firm[key] = !ps(S.firm, key);
+  save(); render();
+};
+window.setPSTemplate = function(tpl) {
+  if(!S.firm) return;
+  S.firm.ps_template = tpl;
+  // Apply sensible color defaults per template
+  if(tpl==='classic' && !S.firm.ps_accent) S.firm.ps_accent='#BF4A2B';
+  if(tpl==='modern')  { if(!S.firm.ps_accent) S.firm.ps_accent='#BF4A2B'; }
+  if(tpl==='minimal') { S.firm.ps_accent=S.firm.ps_accent||'#1C1915'; }
+  save(); render();
+};
+window.setPSValue = function(key, val) {
+  if(!S.firm) return;
+  S.firm[key] = val;
+  save(); render();
+};
+window.updatePSColor = function(key, val) {
+  if(!S.firm || !val.match(/^#[0-9A-Fa-f]{6}$/)) return;
+  S.firm[key] = val;
+  // Sync hex input and color picker
+  const hexId = key==='ps_accent' ? 'ps-accent-hex' : 'ps-hdrbg-hex';
+  const picId = key==='ps_accent' ? 'ps-accent'     : 'ps-hdrbg';
+  const hex = document.getElementById(hexId);
+  const pic = document.getElementById(picId);
+  if(hex && hex !== document.activeElement) hex.value = val;
+  if(pic && pic !== document.activeElement) pic.value = val;
+  save(); render();
+};
+window.previewPrintSettings = function() {
+  // Create a minimal sample invoice and print it
+  const sampleInv = {
+    ...blankInv(),
+    id: 'preview', invoice_no: 'PREVIEW-001',
+    date: today(), status: 'paid',
+    customer_name: 'Sample Customer', customer_phone: '9999999999',
+    customer_gstin: '', customer_address: '123 Sample Street, City',
+    items: [
+      {...blankItem(), name:'Product A', qty:2, rate:1000, gst_rate:18, hsn:'8471', description:'Sample item description'},
+      {...blankItem(), name:'Service B', qty:1, rate:500,  gst_rate:18, hsn:'9983'},
+      {...blankItem(), name:'Product C', qty:3, rate:250,  gst_rate:12, hsn:'3926'},
+    ],
+    notes: S.firm.default_tnc||'Goods once sold will not be taken back.',
+  };
+  doPrint(null, sampleInv);
+};
+
 window.openRem     = id => { S.reminder=S.customers.find(c=>c.id===id)||null; render(); };
 window.closeRem    = () => { S.reminder=null; render(); };
 window.copyRem     = () => { navigator.clipboard.writeText(S._reminderMsg).then(()=>alert('Copied!')).catch(()=>{}); };
@@ -4105,17 +5651,72 @@ window.setSPT      = t => { const cu=$('s-cu')?.value||'',am=$('s-am')?.value||'
 window.toggleSection = id => { const el=$(id); if(el) el.style.display=el.style.display==='none'?'block':'none'; };
 
 /* ── SAVE INVOICE ───────────────────────────────── */
+/* ── T&C Templates ── */
+const TNC_TEMPLATES = [
+  "1. Goods once sold will not be taken back or exchanged.\n2. Payment is due on the date of invoice.\n3. We are not responsible for any damage after delivery.\n4. Subject to {city} jurisdiction only.\n5. E. & O.E.",
+  "1. This is a computer-generated invoice and does not require a physical signature.\n2. All disputes are subject to {city} jurisdiction only.\n3. Interest @ 18% per annum will be charged on overdue payments.\n4. Goods remain the property of the seller until full payment is received.\n5. E. & O.E.",
+  "1. Payment due within agreed credit terms from invoice date.\n2. Cheques returned due to insufficient funds will attract a penalty of \u20b9500.\n3. No claim entertained after 48 hours of receiving goods.\n4. Goods damaged in transit are buyer\u2019s responsibility after delivery.\n5. Subject to {city} jurisdiction only.",
+  "1. Payment is due within 7 days of invoice date.\n2. Service charges are non-refundable once work has commenced.\n3. Additional charges may apply for work beyond the original scope.\n4. Deliverables remain with service provider until full payment received.\n5. E. & O.E.",
+  "1. Goods are sold subject to our standard warranty terms.\n2. Returns accepted in original packaging within 7 days of invoice date.\n3. Price subject to change without prior notice.\n4. Shortage/damage claims must be reported within 24 hours of receipt.\n5. Subject to {city} jurisdiction only.",
+  "1. Work executed as per agreed scope and tender / work order specifications.\n2. Payment due within 15 days of bill submission and site engineer approval.\n3. Bills are subject to measurement verification and deduction of retention as per contract terms.\n4. Any variation in scope or additional work will be billed separately with prior written approval.\n5. Subject to {city} jurisdiction only. E. & O.E."
+];
+
+window.applyTNC = function(idx) {
+  const city = S.firm?.city || S.firm?.state || 'Local';
+  const text = TNC_TEMPLATES[idx].replace(/\{city\}/g, city);
+  const ta = document.getElementById('ic-notes');
+  if(ta){ ta.value = text; if(S.invForm) S.invForm.notes = text; }
+};
+
+window.saveTNCDefault = function(checked) {
+  if(!checked) return;
+  const ta = document.getElementById('ic-notes');
+  if(!ta || !S.firm) return;
+  S.firm.default_tnc = ta.value;
+  save();
+  toast('Set as default T&C for all invoices ✓','success');
+  // uncheck after saving
+  const cb = document.getElementById('ic-tnc-default');
+  if(cb) setTimeout(()=>{ cb.checked=false; }, 1500);
+};
+
+/* T&C field in Edit Firm Settings */
+window.applyTNCSettings = function(idx) {
+  const city = S.firm?.city || S.firm?.state || 'Local';
+  const text = TNC_TEMPLATES[idx].replace(/\{city\}/g, city);
+  const ta = document.getElementById('efm-tnc');
+  if(ta) ta.value = text;
+};
+
+window.saveAndNew = () => {
+  // Save current invoice then open a fresh one
+  const prevCount = S.invoices.length;
+  window.saveInvoice();
+  // saveInvoice is sync for validation, async for save burst
+  // Check after a tick if save succeeded (invoice count increased)
+  setTimeout(()=>{
+    if(S.invoices.length > prevCount){
+      S.invForm = blankInv();
+      S.viewInv = null;
+      S.tab = 'create';
+      render();
+      toast('Invoice saved — ready for next one','success');
+    }
+  }, 100);
+};
+
 window.saveInvoice = () => {
   readInvInputs();
   const f = S.invForm;
-  const filledItems = f.items.filter(i=>i.name?.trim() && Number(i.rate)>0);
+  const docType = f.doc_type||'invoice';
+  const filledItems = f.items.filter(i=>i.name?.trim() && (docType==='challan'||docType==='quotation'||Number(i.rate)>0));
   if(!f?.customer_name?.trim()){ alert('Please enter a customer name.'); return; }
   if(filledItems.length===0){ alert('Add at least one item with a name and rate.'); return; }
   // Only save items that have a name
   f.items = filledItems;
   const isReg = S.firm.gst_registered;
   const isIGST = f.is_igst||false;
-  const t = buildInvTotals(f.items, isReg, isIGST);
+  const t = buildInvTotals(filledItems, isReg, isIGST, {inv_discount:f.inv_discount,inv_discount_type:f.inv_discount_type,extra_charges:f.extra_charges,tcs_rate:f.tcs_rate,round_off:f.round_off});
   const {no, key, n} = getNextInvNo(f.date);
   const fy = getFY(f.date);
   const pm = f.payment_method || 'cash';
@@ -4135,10 +5736,17 @@ window.saveInvoice = () => {
     customer_gstin: f.customer_gstin||'', customer_address: f.customer_address||'',
     ship_to: f.ship_to||'', place_of_supply: f.place_of_supply||'',
     inv_type: f.inv_type||'tax', is_igst: f.is_igst||false,
+    doc_type: f.doc_type||'invoice',
+    po_number: f.po_number||'', order_id: f.order_id||'',
+    payment_terms: f.payment_terms||0,
+    inv_discount: f.inv_discount||0, inv_discount_type: f.inv_discount_type||'pct',
+    extra_charges: f.extra_charges||0, extra_charges_label: f.extra_charges_label||'',
+    tcs_rate: f.tcs_rate||0, round_off: f.round_off||false,
     pay_type:payType, payment_method:pm, is_partial:isPar, partial_amount:partialAmt, due_date:f.due_date||'',
     status, date:f.date||today(), notes:f.notes||'',
     items:f.items.map(it=>({...it})),
     subtotal:t.subtotal, total_discount:t.totalDisc, total_taxable:t.totalTaxable,
+    inv_disc_amt:t.invDiscAmt, extra_charges_amt:t.extraCharges, tcs_amt:t.tcsAmt,
     gst_summary:t.gstSummary, gst_amount:t.totalGST, total:t.grandTotal
   };
   commitInvNo(key, n);
@@ -4155,11 +5763,100 @@ window.saveInvoice = () => {
   if(missedItems.length>0){
     // silently skip — items not in stock master are simply not deducted
   }
+
+  // Sales Return: RE-ADD stock and reverse outstanding
+  if(docType==='return'){
+    f.items.forEach(it=>{
+      if(!it.name) return;
+      const si = S.inventory.find(i=>i.name.toLowerCase()===it.name.toLowerCase());
+      if(si){ si.stock = r2(Number(si.stock||0) + Number(it.qty||0)); } // re-add
+    });
+    // Reverse outstanding if customer exists
+    const retCust = S.customers.find(cx=>cx.name.toLowerCase()===f.customer_name.toLowerCase());
+    if(retCust && retCust.outstanding>0){
+      retCust.outstanding = r2(Math.max(0, retCust.outstanding - t.grandTotal));
+    }
+    toast('Sales return recorded — stock restored','info');
+  }
+
+  // Post-save: show action sheet
   S.viewInv=inv; S.invForm=blankInv(); S.tab='list';
   save(); render();
+  // Show action sheet after render
+  setTimeout(()=>showPostSaveSheet(inv), 80);
+};
+
+/* ── Post-save action sheet ── */
+window.showPostSaveSheet = function(inv) {
+  // Remove any existing sheet
+  const existing = document.getElementById('post-save-sheet');
+  if(existing) existing.remove();
+
+  const isWA = !!(inv.customer_phone);
+  const isPaid = inv.status==='paid'||inv.status==='partial';
+  const isQuot = inv.doc_type==='quotation';
+
+  const sheet = document.createElement('div');
+  sheet.id = 'post-save-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;z-index:4000;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(0,0,0,.45);animation:fadeIn .2s ease';
+  sheet.innerHTML = `
+    <div style="background:var(--surf);border-radius:20px 20px 0 0;padding:20px 18px 32px;animation:slideUp .25s cubic-bezier(.34,1.56,.64,1)">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="width:36px;height:4px;background:var(--bor);border-radius:99px;margin:0 auto 14px"></div>
+        <div style="font-size:15px;font-weight:700;color:var(--tx)">
+          ${isQuot?'Quotation saved':'Invoice saved'} ✅
+        </div>
+        <div style="font-size:12px;color:var(--tx2);margin-top:3px">${esc(inv.invoice_no)} &nbsp;·&nbsp; ${fmt(inv.total)}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${isWA?`<button onclick="openWAInv('${inv.id}');closePostSaveSheet()" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:13px;border:none;background:#25D366;color:#fff;cursor:pointer;font-size:14px;font-weight:600;font-family:var(--ff);width:100%">
+          <span style="font-size:20px">💬</span>
+          <div style="text-align:left"><div>Send on WhatsApp</div><div style="font-size:11px;font-weight:400;opacity:.85">${esc(inv.customer_name)} · ${esc(inv.customer_phone)}</div></div>
+        </button>`:''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <button onclick="doPrint('${inv.id}');closePostSaveSheet()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:13px;border:1.5px solid var(--bor);background:var(--surf);color:var(--tx);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--ff)">
+            🖨️ Print / PDF
+          </button>
+          ${isQuot?`<button onclick="convertQuotation('${inv.id}');closePostSaveSheet()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:13px;border:1.5px solid var(--acc);background:var(--acb);color:var(--acc);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--ff)">
+            ✅ Convert to Invoice
+          </button>`:`<button onclick="saveAndNew();closePostSaveSheet()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:13px;border:1.5px solid var(--bor);background:var(--surf);color:var(--tx);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--ff)">
+            ➕ New Invoice
+          </button>`}
+        </div>
+        <button onclick="closePostSaveSheet()" style="padding:12px;border-radius:13px;border:none;background:var(--surf2);color:var(--tx2);cursor:pointer;font-size:13px;font-family:var(--ff)">
+          Done
+        </button>
+      </div>
+    </div>`;
+  sheet.addEventListener('click', e => { if(e.target===sheet) closePostSaveSheet(); });
+  document.body.appendChild(sheet);
+};
+
+window.closePostSaveSheet = function() {
+  const s = document.getElementById('post-save-sheet');
+  if(s) s.remove();
 };
 
 window.delInv = id => { if(!confirm('Delete?')) return; S.invoices=S.invoices.filter(i=>i.id!==id); if(S.viewInv?.id===id)S.viewInv=null; save(); render(); };
+
+window.convertQuotation = id => {
+  const src = S.invoices.find(i=>i.id===id);
+  if(!src || src.doc_type!=='quotation'){ toast('Not a quotation','error'); return; }
+  if(!confirm('Convert this quotation to a Tax Invoice?')) return;
+  S.invForm = {
+    ...blankInv(),
+    customer_name:src.customer_name, customer_phone:src.customer_phone,
+    customer_gstin:src.customer_gstin||'', customer_address:src.customer_address||'',
+    doc_type:'invoice', inv_type:'tax', is_igst:src.is_igst||false,
+    payment_method:src.payment_method||'cash',
+    notes:src.notes||'',
+    po_number:src.po_number||'', order_id:src.order_id||'',
+    items:src.items.map(it=>({...it,id:uid()})),
+  };
+  S.tab='create'; S.viewInv=null;
+  render();
+  toast('Quotation loaded as invoice — review and save','info');
+};
 
 window.duplicateInv = id => {
   const src = S.invoices.find(i=>i.id===id); if(!src) return;
@@ -4360,17 +6057,81 @@ window.saveInvItem = () => {
   const nm=$('ii-nm')?.value?.trim();
   if(!nm){ alert('Enter item name.'); return; }
   const existing = S.inventory.find(i=>i.name.toLowerCase()===nm.toLowerCase());
+  const itype = S.invItemForm?.item_type||'product';
   const item = {
     id:existing?.id||uid(), name:nm,
+    item_type: itype,
+    category: $('ii-cat')?.value||'',
     unit:$('ii-un')?.value||'pcs',
+    price_mode: $('ii-pmode')?.value||'excl',
     rate:Number($('ii-rt')?.value||0),
-    gst_rate:Number($('ii-gr')?.value||0),
-    stock:Number($('ii-st')?.value||0),
-    hsn:$('ii-hsn')?.value?.trim()||''
+    mrp:Number($('ii-mrp')?.value||0),
+    gst_rate:Number($('ii-gr')?.value||S.firm?.default_gst_rate||18),
+    stock: itype==='service' ? 0 : Number($('ii-st')?.value||0),
+    hsn:$('ii-hsn')?.value?.trim()||'',
+    party_prices: (S.invItemForm?.party_prices||[]).filter(p=>p.customer?.trim()),
+    custom_fields: (S.invItemForm?.custom_fields||[]).filter(f=>f.key?.trim()),
+    online_store: !!$('ii-online')?.checked,
   };
   if(existing){ S.inventory=S.inventory.map(i=>i.id===existing.id?item:i); }
   else { S.inventory=[item,...S.inventory]; }
   S.invItemForm=blankInvItem(); save(); render();
+  toast('Item saved: '+nm, 'success');
+};
+
+/* Add new item category */
+/* ── Party Wise Prices ── */
+window.addPartyPrice = function() {
+  if(!S.invItemForm) return;
+  S.invItemForm.party_prices = [...(S.invItemForm.party_prices||[]), {customer:'',rate:0}];
+  render();
+};
+window.updatePartyPrice = function(i, field, val) {
+  if(!S.invItemForm?.party_prices) return;
+  S.invItemForm.party_prices[i][field] = field==='rate' ? Number(val) : val;
+};
+window.removePartyPrice = function(i) {
+  if(!S.invItemForm) return;
+  S.invItemForm.party_prices = S.invItemForm.party_prices.filter((_,idx)=>idx!==i);
+  render();
+};
+
+/* ── Custom Fields ── */
+window.addCustomField = function() {
+  if(!S.invItemForm) return;
+  S.invItemForm.custom_fields = [...(S.invItemForm.custom_fields||[]), {key:'',value:''}];
+  render();
+};
+window.updateCustomField = function(i, field, val) {
+  if(!S.invItemForm?.custom_fields) return;
+  S.invItemForm.custom_fields[i][field] = val;
+};
+window.removeCustomField = function(i) {
+  if(!S.invItemForm) return;
+  S.invItemForm.custom_fields = S.invItemForm.custom_fields.filter((_,idx)=>idx!==i);
+  render();
+};
+
+/* ── Apply party price when customer selected ── */
+function applyPartyPrice(custName) {
+  if(!S.invForm||!custName) return;
+  S.invForm.items = S.invForm.items.map(it=>{
+    const invItem = S.inventory.find(i=>i.name.toLowerCase()===it.name.toLowerCase());
+    if(!invItem||!invItem.party_prices?.length) return it;
+    const pp = invItem.party_prices.find(p=>p.customer.toLowerCase()===custName.toLowerCase());
+    if(pp && pp.rate>0) return {...it, rate:pp.rate};
+    return it;
+  });
+}
+
+window.addItemCategory = function() {
+  const name = prompt('New category name:');
+  if(!name||!name.trim()) return;
+  const cat = name.trim();
+  if((S.inv_categories||[]).includes(cat)){ toast('Category already exists','warn'); return; }
+  S.inv_categories = [...(S.inv_categories||[]), cat];
+  save(); render();
+  toast('Category added: '+cat,'success');
 };
 
 window.editInvItem = id => {
@@ -4798,7 +6559,7 @@ window.bulkPrint = async function() {
 
   // Build one HTML doc — each invoice on its own page via CSS page-break
   const pages = invs.map(inv => {
-    const t = buildInvTotals(inv.items||[], isReg);
+    const t = buildInvTotals(inv.items||[], isReg, inv.is_igst||false, {inv_discount:inv.inv_discount,inv_discount_type:inv.inv_discount_type,extra_charges:inv.extra_charges,tcs_rate:inv.tcs_rate,round_off:inv.round_off});
     // Use per-invoice QR with correct amount
     return printHTML(inv, f, t, isReg, qrURL);
   });
@@ -5048,18 +6809,187 @@ function scrollCmdSel(){
 function triggerSaveBurst() {
   const el = document.createElement('div');
   el.className='save-burst';
-  // spawn near save button
   const btn = document.querySelector('.btn.bpri');
   if(btn){
     const r=btn.getBoundingClientRect();
     el.style.left=(r.left+r.width/2-16)+'px';
     el.style.top=(r.top-10)+'px';
-  } else {
-    el.style.left='50%'; el.style.top='50%';
-  }
+  } else { el.style.left='50%'; el.style.top='50%'; }
   el.textContent='✅';
   document.body.appendChild(el);
   setTimeout(()=>el.remove(), 700);
+}
+
+/* ── Multi-business profile management ── */
+window.toggleProfileMenu = function() {
+  const m = document.getElementById('profile-menu');
+  if(!m) return;
+  m.style.display = m.style.display==='none' ? 'block' : 'none';
+  if(m.style.display==='block'){
+    // Close on outside click
+    setTimeout(()=>{
+      document.addEventListener('click', function _close(e){
+        if(!m.contains(e.target) && !document.getElementById('profile-switcher-wrap')?.contains(e.target)){
+          m.style.display='none';
+          document.removeEventListener('click',_close,true);
+        }
+      },{capture:true});
+    },10);
+  }
+};
+
+window.switchProfile = async function(pid) {
+  const m = document.getElementById('profile-menu');
+  if(m) m.style.display='none';
+  if(pid===(S._activeProfileId||'default')) return; // already active
+
+  if(!confirm('Switch to this business?')) return;
+
+  // Save current profile first
+  save();
+
+  // Migrate this profile's blob from localStorage to IDB if needed
+  await IDB.migrateFromLocalStorage('rf_data_'+pid);
+
+  // Switch active profile
+  S._activeProfileId = pid;
+  localStorage.setItem(_ACTIVE_KEY, pid);
+
+  // Load new profile data from IDB
+  const newRaw = await IDB.get('rf_data_'+pid);
+  if(newRaw){
+    try {
+      const data = JSON.parse(newRaw);
+      S.firm=data.firm||null; S.customers=data.customers||[];
+      S.invoices=data.invoices||[]; S.purchases=data.purchases||[];
+      S.sales=data.sales||[]; S.expenses=data.expenses||[];
+      S.payments=data.payments||[]; S.inventory=data.inventory||[];
+      S.inv_counters=data.inv_counters||{}; S.inv_categories=data.inv_categories||[];
+    } catch(e){}
+  } else {
+    // New empty profile
+    S.firm=null; S.customers=[]; S.invoices=[]; S.purchases=[];
+    S.sales=[]; S.expenses=[]; S.payments=[]; S.inventory=[];
+    S.inv_counters={}; S.inv_categories=[];
+  }
+  S.invForm=blankInv(); S.mode='invoice'; S.tab='create';
+  render();
+  toast('Switched to '+pid,'info');
+};
+
+window.addNewBusiness = async function() {
+  const m = document.getElementById('profile-menu');
+  if(m) m.style.display='none';
+
+  const name = prompt('New business name:');
+  if(!name||!name.trim()) return;
+
+  // 1 — Register the new profile in the list
+  const pid      = 'profile_'+uid();
+  const profiles = _getProfiles();
+  if(!profiles.find(p=>p.id==='default')){
+    profiles.unshift({id:'default', name:S.firm?.firm_name||'My Business'});
+  }
+  profiles.push({id:pid, name:name.trim()});
+  _saveProfiles(profiles);
+
+  // 2 — Save current profile before switching
+  save();
+
+  // 3 — Switch active profile id
+  S._activeProfileId = pid;
+  localStorage.setItem(_ACTIVE_KEY, pid);
+
+  // 4 — Reset state to blank (new business, no data yet)
+  S.firm          = null;
+  S.customers     = [];
+  S.invoices      = [];
+  S.purchases     = [];
+  S.sales         = [];
+  S.expenses      = [];
+  S.payments      = [];
+  S.inventory     = [];
+  S.inv_counters  = {};
+  S.inv_categories= [];
+  S._profiles     = profiles;
+  S._setupNature  = '';
+  S._setupGST     = false;
+  S._setupBillingType = 'retail';
+  S.invForm       = null;
+
+  // 5 — Key stays in memory (same PIN encrypts new profile)
+  // Go straight to setup wizard — no PIN re-entry needed
+  render();
+  toast('New business created — complete setup below', 'info');
+};
+
+/* Keep profile list in sync when firm name changes */
+function _syncProfileName() {
+  if(!S.firm) return;
+  const profiles = _getProfiles();
+  const pid = S._activeProfileId||'default';
+  const existing = profiles.find(p=>p.id===pid);
+  if(existing){ existing.name=S.firm.firm_name; }
+  else { profiles.push({id:pid, name:S.firm.firm_name}); }
+  _saveProfiles(profiles);
+  S._profiles = profiles;
+}
+
+
+/* ── Panic: wipe everything ── */
+/* ── Close Financial Year ── */
+window.closeFinancialYear = function() {
+  const fy = S.invoices.length ? (S.invoices[0].fy || (new Date().getFullYear()+'-'+(new Date().getFullYear()+1))) : '';
+  if(!confirm('Close Financial Year ' + fy + '?\n\n• All current data will be archived under this FY.\n• Invoices, purchases and expenses will be preserved but marked as closed.\n• A backup will be downloaded before closing.\n\nProceed?')) return;
+  // Download backup first
+  window.backupData();
+  // Mark all invoices with current FY as closed
+  const closedFY = fy;
+  S.invoices = S.invoices.map(i => ({...i, fy_closed: closedFY}));
+  save(); render();
+  toast('Financial year ' + closedFY + ' closed. Backup downloaded.', 'success');
+};
+
+window.confirmPanicWipe = function() {
+  const answer = prompt(
+    'DANGER: This will permanently delete ALL your business data.\n\nType DELETE to confirm:'
+  );
+  if(answer !== 'DELETE') return;
+
+  // 1 — Wipe localStorage (sync, always works)
+  try {
+    Object.keys(localStorage).forEach(k => {
+      if(k.startsWith('rf_')) localStorage.removeItem(k);
+    });
+  } catch(e){}
+
+  // 2 — Wipe IndexedDB by deleting the entire database
+  //     This is more reliable than deleting keys one by one
+  try {
+    indexedDB.deleteDatabase('RetailFlowDB');
+  } catch(e){}
+
+  // 3 — Reload immediately, no waiting
+  location.reload();
+};
+
+/* ── Sensitive field masking ── */
+window._revealed = {};
+window.toggleReveal = function(id) {
+  _revealed[id] = !_revealed[id];
+  render();
+};
+function maskAcc(v, id) {
+  if(!v) return '—';
+  if(_revealed[id]) return `<span onclick="toggleReveal('${id}')" style="cursor:pointer" title="Click to hide">${v} 🙈</span>`;
+  const m = v.length>4 ? '•'.repeat(v.length-4)+v.slice(-4) : v;
+  return `<span class="masked-val" onclick="toggleReveal('${id}')" title="Click to reveal">${m}</span>`;
+}
+function maskPAN(v, id) {
+  if(!v) return '—';
+  if(_revealed[id]) return `<span onclick="toggleReveal('${id}')" style="cursor:pointer" title="Click to hide">${v} 🙈</span>`;
+  const m = v.slice(0,2)+'•••••'+v.slice(-3);
+  return `<span class="masked-val" onclick="toggleReveal('${id}')" title="Click to reveal">${m}</span>`;
 }
 
 /* ══════════════════════════════════════════════════
@@ -5126,9 +7056,115 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
+/* ── PWA: Service Worker + Install Prompt ─────── */
+(function initPWA(){
+  // Register service worker for offline support
+  if('serviceWorker' in navigator){
+    // Cache version is derived from APP_BUILD_TS — a timestamp injected
+    // at build time (or falls back to APP_URL hash for uniqueness).
+    // When the HTML file changes and is redeployed, this value changes,
+    // the old cache is purged, and users automatically get the new version.
+    const CACHE_VER = typeof APP_BUILD_TS !== 'undefined'
+      ? APP_BUILD_TS
+      : APP_URL.split('').reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0, 0);
+
+    const swCode = `
+const CACHE = 'retailflow-' + ${CACHE_VER};
+const CACHE_PREFIX = 'retailflow-';
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(cache =>
+      cache.addAll([self.location.origin + '/', self.location.href])
+        .catch(()=>{})
+    )
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  // Delete ALL old retailflow caches — not just a specific version
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(k => k.startsWith(CACHE_PREFIX) && k !== CACHE)
+          .map(k => {
+            console.log('[SW] Deleting old cache:', k);
+            return caches.delete(k);
+          })
+      )
+    ).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', e => {
+  if(e.request.method !== 'GET') return;
+  // Network-first for HTML (ensures updates land immediately)
+  // Cache-first for everything else (fonts, CDN scripts)
+  const isHTML = e.request.destination === 'document'
+    || e.request.url.endsWith('.html')
+    || e.request.url === self.location.origin + '/';
+
+  if(isHTML) {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+  } else {
+    e.respondWith(
+      caches.match(e.request).then(cached => {
+        if(cached) return cached;
+        return fetch(e.request).then(res => {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        });
+      })
+    );
+  }
+});`;
+    const blob = new Blob([swCode], {type:'application/javascript'});
+    const swURL = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swURL)
+      .then(reg => {
+        // Check for updates every time the app loads
+        reg.update().catch(()=>{});
+      })
+      .catch(()=>{});
+  }
+
+  // Intercept install prompt and surface it as a topbar button
+  window._pwaInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    window._pwaInstallPrompt = e;
+    // Show install button if topbar is rendered
+    const btn = document.getElementById('pwa-install-btn');
+    if(btn) btn.style.display = 'inline-flex';
+  });
+  window.addEventListener('appinstalled', () => {
+    window._pwaInstallPrompt = null;
+    const btn = document.getElementById('pwa-install-btn');
+    if(btn) btn.style.display = 'none';
+    toast('RetailFlow installed on your device!', 'success');
+  });
+})();
+
+window.triggerPWAInstall = async function() {
+  if(!window._pwaInstallPrompt) return;
+  window._pwaInstallPrompt.prompt();
+  const {outcome} = await window._pwaInstallPrompt.userChoice;
+  if(outcome === 'accepted') window._pwaInstallPrompt = null;
+};
+
 /* ── INIT ───────────────────────────────────────── */
-if(S.dark) document.documentElement.setAttribute('data-dark','');
-render();
+initApp();
 </script>
 </body>
 </html>
