@@ -115,10 +115,24 @@ hr{border:none;border-top:1.5px solid var(--bor);margin:14px 0}
 .fsec-icon{width:26px;height:26px;border-radius:7px;background:var(--rdb);color:var(--acc);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
 .fsec-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tx2)}
 /* Invoice form layout */
-.inv-form-body{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+.inv-form-body{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:stretch}
 .inv-form-main{min-width:0}
-.inv-totals-sticky{position:sticky;top:72px}
-@media(max-width:860px){.inv-form-body{grid-template-columns:1fr}.inv-totals-sticky{position:static}}
+/* Right column: full height flex so panel sits at bottom */
+.inv-form-body > div:last-child{display:flex;flex-direction:column;justify-content:flex-end}
+/* Panel: sticky bottom so it stays in view while scrolling */
+.inv-totals-sticky{position:sticky;bottom:16px;max-height:calc(100vh - 88px);overflow-y:auto}
+/* Mobile: totals moves below form, save bar pins to bottom */
+@media(max-width:860px){
+  .inv-form-body{grid-template-columns:1fr}
+  .inv-totals-sticky{position:static}
+  /* Mobile sticky save bar */
+  .mob-save-bar{position:fixed;bottom:0;left:0;right:0;z-index:200;
+    background:var(--surf);border-top:1.5px solid var(--bor);
+    padding:10px 16px 14px;box-shadow:0 -4px 20px rgba(0,0,0,.1);
+    display:flex;gap:8px;align-items:center}
+  .mob-save-bar-spacer{height:72px} /* prevent form content going under bar */
+}
+@media(min-width:861px){.mob-save-bar{display:none!important}}
 /* Modals */
 .mover{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto}
 .modal{background:var(--surf);border-radius:18px;padding:24px;width:100%;max-width:520px;box-shadow:var(--shlg);margin:auto}
@@ -1738,9 +1752,9 @@ const NATURE_CONFIG = {
     billing_type: 'firm',
     payment_method: 'cheque',
     hide_signatory: false,
-    inv_prefix: 'WORK',
+    inv_prefix: 'BILL',
     tnc_idx: 5,   // Contractor T&C
-    desc: 'Tender-based work, site projects, govt billing, work orders.',
+    desc: 'Contracts for goods supply and site work — materials, labour, tender bills.',
   },
 };
 
@@ -2282,7 +2296,20 @@ function renderInvCreate() {
 
   <!-- Right: sticky summary -->
   <div>${totalsPanel}</div>
-  </div><!-- end inv-form-body -->`;
+  </div><!-- end inv-form-body -->
+
+  <!-- Mobile sticky save bar (hidden on desktop via CSS) -->
+  <div class="mob-save-bar no-print" id="mob-save-bar">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:10px;color:var(--tx2);font-weight:500">Grand Total</div>
+      <div id="mob-grand" style="font-family:var(--ffd);font-size:22px;font-weight:700;color:var(--acc)">${fmt(preview.grandTotal)}</div>
+    </div>
+    <button class="btn bgho bsm" onclick="saveAndNew()" style="flex-shrink:0">➕ &amp; New</button>
+    <button class="btn bpri" onclick="saveInvoice()" style="flex-shrink:0;padding:10px 22px;font-size:14px;font-weight:700">
+      💾 Save
+    </button>
+  </div>
+  <div class="mob-save-bar-spacer"></div>`;
 }
 
 function renderGSTSummaryPanel(t, isPrint) {
@@ -2390,6 +2417,10 @@ function updateTotalsPanel() {
         <div class="row jbet" style="font-family:var(--ffd);font-size:18px"><span>Total</span><span class="txacc">${fmt(t.grandTotal)}</span></div>`;
     }
   }
+  // Update mobile save bar grand total
+  const mobGrand = $('mob-grand');
+  if(mobGrand) mobGrand.textContent = fmt(t.grandTotal);
+
   // Update partial bar if visible
   const pam = Number($('ic-pam')?.value||0);
   const bar = $('par-bar'), pct = $('par-pct'), bal = $('par-bal');
@@ -2901,7 +2932,7 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   h.push('.totals-row.tax{color:#1C1915}');
   h.push(`'.grand-row{background:${HDR};color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border:2px solid ${HDR}}'`);
   h.push(".grand-row .gl{font-family:'Playfair Display',serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}");
-  h.push(".grand-row .ga{font-family:'Playfair Display',serif;font-size:16px;font-weight:700}");
+  h.push(".grand-row .ga{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;letter-spacing:-.3px}");
   /* Words box */
   h.push('.words-box{border:1px solid #DDD8CF;border-top:none;padding:5px 10px;font-size:9px;color:#1C1915;font-style:italic;background:#FDFCFA;margin-bottom:7px}');
   h.push('.words-lbl{font-size:7px;font-weight:700;color:#7A746C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;font-style:normal}');
@@ -2940,6 +2971,8 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   h.push('.items-table-wrap{flex:1}');
   h.push('.bottom-section{margin-top:auto}');
   h.push('@media print{body{padding:0;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:10mm 12mm}.frame{margin:0;min-height:calc(297mm - 20mm)}.inner{padding:10px 14px}}');
+  /* Fallback: if printer ignores backgrounds, grand-row still readable */
+  h.push('@media print{.grand-row{outline:2px solid '+HDR+'!important;outline-offset:-1px}}');
   h.push('</style></head><body>');
   h.push('<div class="frame">');
   h.push('<div class="accent-bar"></div>');
@@ -3119,7 +3152,7 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   if(t.extraCharges>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>' + esc(inv.extra_charges_label||'Extra Charges') + '</span><span>\u20B9' + fmt(t.extraCharges) + '</span></div>');
   if(t.tcsAmt>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>TCS</span><span>\u20B9' + fmt(t.tcsAmt) + '</span></div>');
   if(t.roundOff) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>Round Off</span><span>' + (t.roundOff>=0?'+':'') + fmt(t.roundOff) + '</span></div>');
-    h.push('<div class="grand-row"><span class="gl">Grand Total</span><span class="ga">₹' + fmt(inv.total) + '</span></div>');
+    h.push('<div class="grand-row"><span class="gl">Grand Total</span><span class="ga" style="font-size:20px">₹' + fmt(inv.total) + '</span></div>');
   h.push('</div></div>');
 
   // ── Amount in Words ──────────────────────────────
@@ -3255,7 +3288,7 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   h.push('.totals-row.tax{color:#1C1915}');
   h.push('.grand-row{background:'+HDR+';color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border:2px solid '+HDR+'}');
   h.push(".grand-row .gl{font-family:'Playfair Display',serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}");
-  h.push(".grand-row .ga{font-family:'Playfair Display',serif;font-size:16px;font-weight:700}");
+  h.push(".grand-row .ga{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;letter-spacing:-.3px}");
   /* Words */
   h.push('.words-box{border:1px solid #DDD8CF;border-top:none;padding:4px 10px;font-size:8.5px;font-style:italic;color:#1C1915;background:#FDFCFA;margin-bottom:6px}');
   h.push('.words-lbl{font-size:7px;font-weight:700;color:#7A746C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;font-style:normal}');
@@ -3281,6 +3314,7 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   h.push('.items-table-wrap{flex:1}');
   h.push('.bottom-section{margin-top:auto}');
   h.push('@media print{body{padding:0;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:10mm 12mm}.page-body{min-height:calc(297mm - 20mm)}}');
+  h.push('@media print{.grand-row{outline:2px solid '+HDR+'!important;outline-offset:-1px}}');
   h.push('</style></head><body>');
   h.push('<div class="page-body">');
 
@@ -3466,7 +3500,7 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   if(t.extraCharges>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>' + esc(inv.extra_charges_label||'Extra Charges') + '</span><span>\u20B9' + fmt(t.extraCharges) + '</span></div>');
   if(t.tcsAmt>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>TCS</span><span>\u20B9' + fmt(t.tcsAmt) + '</span></div>');
   if(t.roundOff) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>Round Off</span><span>' + (t.roundOff>=0?'+':'') + fmt(t.roundOff) + '</span></div>');
-    h.push('<div class="grand-row"><span class="gl">Grand Total</span><span class="ga">₹' + fmt(inv.total) + '</span></div>');
+    h.push('<div class="grand-row"><span class="gl">Grand Total</span><span class="ga" style="font-size:20px">₹' + fmt(inv.total) + '</span></div>');
   h.push('</div></div>');
 
   // ── Amount in Words ──────────────────────────────
@@ -6188,7 +6222,7 @@ const TNC_TEMPLATES = [
   "1. Payment due within agreed credit terms from invoice date.\n2. Cheques returned due to insufficient funds will attract a penalty of \u20b9500.\n3. No claim entertained after 48 hours of receiving goods.\n4. Goods damaged in transit are buyer\u2019s responsibility after delivery.\n5. Subject to {city} jurisdiction only.",
   "1. Payment is due within 7 days of invoice date.\n2. Service charges are non-refundable once work has commenced.\n3. Additional charges may apply for work beyond the original scope.\n4. Deliverables remain with service provider until full payment received.\n5. E. & O.E.",
   "1. Goods are sold subject to our standard warranty terms.\n2. Returns accepted in original packaging within 7 days of invoice date.\n3. Price subject to change without prior notice.\n4. Shortage/damage claims must be reported within 24 hours of receipt.\n5. Subject to {city} jurisdiction only.",
-  "1. Work executed as per agreed scope and tender / work order specifications.\n2. Payment due within 15 days of bill submission and site engineer approval.\n3. Bills are subject to measurement verification and deduction of retention as per contract terms.\n4. Any variation in scope or additional work will be billed separately with prior written approval.\n5. Subject to {city} jurisdiction only. E. & O.E."
+  "1. Work executed and goods supplied as per agreed scope, work order and/or purchase order.\n2. Payment due within 15 days of bill submission. Bills subject to measurement verification and site engineer approval.\n3. Materials supplied are as per specifications; shortage or damage claims must be reported within 48 hours of delivery.\n4. Retention deduction and TDS shall be as per contract terms. Any variation will be billed separately with prior approval.\n5. Subject to {city} jurisdiction only. E. & O.E."
 ];
 
 window.applyTNC = function(idx) {
