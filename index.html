@@ -321,6 +321,7 @@ hr{border:none;border-top:1.5px solid var(--bor);margin:14px 0}
 
 /* ── Post-save action sheet ─────────────────────── */
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 #post-save-sheet button:hover{opacity:.88}
 #post-save-sheet button:active{transform:scale(.97)}
@@ -585,20 +586,23 @@ const SHOW_POWERED = true; // set false in Settings to hide "Made with RetailFlo
    enc_blob stores business data as JSON.
 ══════════════════════════════════════════════════ */
 
-const CLOUD_PROVIDER = null;  // 'supabase' | 'firebase' | null
+const CLOUD_PROVIDER = 'firebase';  // ← ACTIVE
 
 const CLOUD_CFG = {
   supabase: {
-    url:     'YOUR_SUPABASE_URL',       // https://xyz.supabase.co
+    url:     'YOUR_SUPABASE_URL',
     anonKey: 'YOUR_SUPABASE_ANON_KEY',
   },
   firebase: {
-    apiKey:            'YOUR_FIREBASE_API_KEY',
-    authDomain:        'YOUR_PROJECT.firebaseapp.com',
-    projectId:         'YOUR_PROJECT_ID',
-    storageBucket:     'YOUR_PROJECT.appspot.com',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    appId:             'YOUR_APP_ID',
+    // ── PASTE YOUR FIREBASE CONFIG HERE ──────────
+    // firebase console → project settings → your web app → SDK setup
+    apiKey:            'PASTE_API_KEY',
+    authDomain:        'PASTE_PROJECT_ID.firebaseapp.com',
+    projectId:         'PASTE_PROJECT_ID',
+    storageBucket:     'PASTE_PROJECT_ID.appspot.com',
+    messagingSenderId: 'PASTE_SENDER_ID',
+    appId:             'PASTE_APP_ID',
+    // ─────────────────────────────────────────────
   },
 };
 
@@ -785,12 +789,14 @@ const AUTH = {
   _localTs:   null,    // ISO string of last local save time
 };
 
-/* ── Load Firebase SDKs on demand if needed ── */
+/* ── Load Firebase SDKs ── */
 (function loadCloudSDKs(){
   if(CLOUD_PROVIDER==='firebase'){
+    const VER = '10.7.1'; // latest stable compat SDK
     ['app','auth','firestore'].forEach(mod=>{
-      const s=document.createElement('script');
-      s.src=`https://www.gstatic.com/firebasejs/9.23.0/firebase-${mod}-compat.js`;
+      const s = document.createElement('script');
+      s.src = `https://www.gstatic.com/firebasejs/${VER}/firebase-${mod}-compat.js`;
+      s.onerror = () => console.warn(`[RetailFlow] Firebase ${mod} SDK failed to load`);
       document.head.appendChild(s);
     });
   }
@@ -959,8 +965,21 @@ function renderAuthScreen(){
 }
 
 /* ── CONSTANTS ──────────────────────────────────── */
-const GST_SLABS = [0, 5, 18, 40];
+// Standard slabs — used in setup, settings, purchase form
+const GST_SLABS = [0, 5, 12, 18, 28, 40];
+
+// Extended slabs — used in item master (covers all special rates)
 const GST_SLABS_EXTENDED = [0, 0.1, 0.25, 1.5, 3, 5, 12, 18, 28, 40];
+
+// Contractor-specific GST reference map
+// Works contract rates under GST (Notification 11/2017-CT(Rate))
+const GST_CONTRACTOR_RATES = [
+  { rate: 0,  label: '0% — Unprocessed natural materials (sand, earth, gravel)' },
+  { rate: 5,  label: '5% — Affordable housing construction services (no ITC)' },
+  { rate: 12, label: '12% — Works contract: Govt / Railways / Affordable residential' },
+  { rate: 18, label: '18% — Works contract: Commercial / Industrial / Roads / Bridges' },
+  { rate: 28, label: '28% — Cement, tiles, glass, paints, waterproofing compounds' },
+];
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Jammu & Kashmir','Ladakh','Chandigarh','Puducherry','Andaman & Nicobar Islands','Dadra & Nagar Haveli','Daman & Diu','Lakshadweep'];
 const UNITS = ['pcs','kg','g','litre','ml','box','bag','dozen','pair','set','roll','sheet','metre'];
 const EXP_CATS = ['Rent','Electricity','Staff Salary','Transport','Packaging','Maintenance','Marketing','Miscellaneous'];
@@ -1574,7 +1593,7 @@ function renderSetup() {
       </div>
     </div>
     <div class="fld"><label>Default GST Rate</label>
-      <select id="sf-gr">${GST_SLABS.map(r=>`<option value="${r}"${r===18?' selected':''}>${r}%</option>`).join('')}</select>
+      <input id="sf-gr" type="number" min="0" max="100" step="0.1" value="18" placeholder="18" title="Default GST rate %">
     </div>`:'<input type="hidden" id="sf-gs" value=""><input type="hidden" id="sf-st" value=""><input type="hidden" id="sf-gr" value="0">'}
 
     <!-- Payment details — contextual -->
@@ -2171,6 +2190,15 @@ function renderInvCreate() {
 
     <!-- Section: Items -->
     <div class="fsec"><div class="fsec-icon">📦</div><div class="fsec-label">Line Items ${isReg?'<span class="fs10" style="text-transform:none;letter-spacing:0;font-weight:400">(GST per item)</span>':''}</div></div>
+    ${isReg && S.firm.business_nature==='contractor' ? `
+    <div style="background:var(--blb);border:1px solid var(--blu);border-radius:9px;padding:9px 13px;margin-bottom:10px;font-size:10.5px;color:var(--tx2);line-height:1.8">
+      <span style="font-weight:700;color:var(--blu)">🏗️ Contractor GST rates:</span>
+      &nbsp;
+      <span title="Affordable housing (no ITC)"><b style="color:var(--tx)">5%</b> Affordable housing</span> &nbsp;·&nbsp;
+      <span title="Govt/Railways/Affordable residential works contract"><b style="color:var(--tx)">12%</b> Govt / Railways works</span> &nbsp;·&nbsp;
+      <span title="Commercial/Industrial/Roads works contract"><b style="color:var(--tx)">18%</b> Commercial works</span> &nbsp;·&nbsp;
+      <span title="Cement, tiles, glass, paints"><b style="color:var(--tx)">28%</b> Cement / tiles</span>
+    </div>` : ''}
     <div style="overflow-x:auto;border:1.5px solid var(--bor);border-radius:10px">
     <table class="it">
       <thead><tr>
@@ -2349,7 +2377,7 @@ function renderItemRows() {
       <td><input class="iinput" data-id="${it.id}" data-f="qty" type="number" min="1" step="1" value="${it.qty}" style="width:52px"></td>
       <td><input class="iinput" data-id="${it.id}" data-f="rate" type="number" min="0" step="0.01" value="${it.rate}" style="width:76px"></td>
       <td><input class="iinput" data-id="${it.id}" data-f="discount" type="number" min="0" max="100" step="1" value="${it.discount||0}" style="width:55px"></td>
-      ${isReg?`<td><select class="iinput" data-id="${it.id}" data-f="gst_rate" style="width:62px">${GST_SLABS.map(r=>`<option value="${r}"${Number(it.gst_rate)===r?' selected':''}>${r}%</option>`).join('')}</select></td>
+      ${isReg?`<td><input class="iinput" data-id="${it.id}" data-f="gst_rate" type="number" min="0" max="100" step="0.1" value="${it.gst_rate}" style="width:58px" title="GST rate %" placeholder="18"></td>
         <td><input class="iinput ro" data-taxable="${it.id}" value="${fmt(c.taxable)}" readonly style="width:78px;font-size:11px"></td>
         <td><input class="iinput ro" data-gstamt="${it.id}" value="${fmt(c.gstAmt)}" readonly style="width:66px;font-size:11px;color:var(--red)"></td>` : ''}
       <td><input class="iinput ro" id="ia-${it.id}" value="${fmt(c.total)}" readonly style="width:86px;font-weight:600"></td>
@@ -3906,7 +3934,7 @@ function renderTransactions(tP, tE) {
       </div>
     </div>
     ${S.firm.gst_registered?`<div class="fld" style="max-width:180px"><label>GST Rate</label>
-      <select id="p-gst">${GST_SLABS.map(r=>`<option value="${r}"${Number(pf.gst_rate||18)===r?' selected':''}>${r}%</option>`).join('')}</select>
+      <input id="p-gst" type="number" min="0" max="100" step="0.1" value="${Number(pf.gst_rate||18)}" placeholder="18" style="width:80px" title="GST rate %">
     </div>`:''}
     <button class="btn bpri" onclick="savePurch()">Add Purchase</button>
   </div>`;
@@ -5234,7 +5262,7 @@ function renderInventoryMode(){
     <div class="g3">
       ${S.firm.gst_registered?`
       <div class="fld"><label>GST Rate</label>
-        <select id="ii-gr">${GST_SLABS_EXTENDED.map(r=>`<option value="${r}"${Number(r)===Number(iif.gst_rate)?' selected':''}>${r}% GST</option>`).join('')}</select>
+        <input id="ii-gr" type="number" min="0" max="100" step="0.1" value="${iif.gst_rate}" placeholder="18" title="GST rate %">
       </div>
       <div class="fld"><label>HSN / SAC Code</label>
         <input id="ii-hsn" value="${esc(iif.hsn||'')}" placeholder="e.g. 1701" maxlength="8">
@@ -5651,9 +5679,7 @@ function renderEditFirmModal() {
         </div>
       </div>
       <div class="fld"><label>Default Item GST Rate</label>
-        <select id="efm-gr">
-          ${GST_SLABS.map(r => `<option value="${r}"${Number(v('gr', f.default_gst_rate||18))===r?' selected':''}>${r}% GST</option>`).join('')}
-        </select>
+        <input id="efm-gr" type="number" min="0" max="100" step="0.1" value="${esc(v('gr', f.default_gst_rate||18))}" placeholder="18" title="Default GST rate %">
       </div>` : `<input type="hidden" id="efm-gs" value=""><input type="hidden" id="efm-st" value=""><input type="hidden" id="efm-gr" value="0">`}
 
       <div class="sechead">Business Classification</div>
@@ -6352,46 +6378,108 @@ window.saveInvoice = () => {
 
 /* ── Post-save action sheet ── */
 window.showPostSaveSheet = function(inv) {
-  // Remove any existing sheet
   const existing = document.getElementById('post-save-sheet');
   if(existing) existing.remove();
 
-  const isWA = !!(inv.customer_phone);
-  const isPaid = inv.status==='paid'||inv.status==='partial';
-  const isQuot = inv.doc_type==='quotation';
+  const isWA   = !!(inv.customer_phone);
+  const isQuot = inv.doc_type === 'quotation';
 
   const sheet = document.createElement('div');
   sheet.id = 'post-save-sheet';
-  sheet.style.cssText = 'position:fixed;inset:0;z-index:4000;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(0,0,0,.45);animation:fadeIn .2s ease';
+  sheet.style.cssText = [
+    'position:fixed;inset:0;z-index:4000',
+    'display:flex;align-items:center;justify-content:center',
+    'background:rgba(0,0,0,.5);padding:20px',
+    'animation:fadeIn .18s ease',
+  ].join(';');
+
   sheet.innerHTML = `
-    <div style="background:var(--surf);border-radius:20px 20px 0 0;padding:20px 18px 32px;animation:slideUp .25s cubic-bezier(.34,1.56,.64,1)">
-      <div style="text-align:center;margin-bottom:16px">
-        <div style="width:36px;height:4px;background:var(--bor);border-radius:99px;margin:0 auto 14px"></div>
-        <div style="font-size:15px;font-weight:700;color:var(--tx)">
-          ${isQuot?'Quotation saved':'Invoice saved'} ✅
+    <div style="
+      background:var(--surf);
+      border-radius:20px;
+      padding:28px 24px 24px;
+      width:100%;
+      max-width:360px;
+      box-shadow:var(--shlg);
+      animation:popIn .22s cubic-bezier(.34,1.56,.64,1);
+      position:relative;
+    ">
+      <!-- Close X -->
+      <button onclick="closePostSaveSheet()" style="
+        position:absolute;top:14px;right:14px;
+        background:var(--surf2);border:none;border-radius:50%;
+        width:28px;height:28px;cursor:pointer;
+        font-size:14px;color:var(--tx2);
+        display:flex;align-items:center;justify-content:center;
+        font-family:var(--ff);line-height:1
+      ">✕</button>
+
+      <!-- Success icon + invoice info -->
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="
+          width:52px;height:52px;border-radius:50%;
+          background:var(--gnb);border:2px solid var(--grn);
+          display:flex;align-items:center;justify-content:center;
+          margin:0 auto 12px;font-size:24px
+        ">✅</div>
+        <div style="font-size:16px;font-weight:700;color:var(--tx)">
+          ${isQuot ? 'Quotation saved' : 'Invoice saved'}
         </div>
-        <div style="font-size:12px;color:var(--tx2);margin-top:3px">${esc(inv.invoice_no)} &nbsp;·&nbsp; ${fmt(inv.total)}</div>
+        <div style="font-size:12px;color:var(--tx2);margin-top:4px">
+          ${esc(inv.invoice_no)}
+          <span style="margin:0 6px;opacity:.4">·</span>
+          <span style="font-weight:600;color:var(--acc)">${fmt(inv.total)}</span>
+        </div>
+        ${inv.customer_name ? `<div style="font-size:11px;color:var(--tx2);margin-top:3px">${esc(inv.customer_name)}</div>` : ''}
       </div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        ${isWA?`<button onclick="openWAInv('${inv.id}');closePostSaveSheet()" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:13px;border:none;background:#25D366;color:#fff;cursor:pointer;font-size:14px;font-weight:600;font-family:var(--ff);width:100%">
-          <span style="font-size:20px">💬</span>
-          <div style="text-align:left"><div>Send on WhatsApp</div><div style="font-size:11px;font-weight:400;opacity:.85">${esc(inv.customer_name)} · ${esc(inv.customer_phone)}</div></div>
-        </button>`:''}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <button onclick="doPrint('${inv.id}');closePostSaveSheet()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:13px;border:1.5px solid var(--bor);background:var(--surf);color:var(--tx);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--ff)">
-            🖨️ Print / PDF
-          </button>
-          ${isQuot?`<button onclick="convertQuotation('${inv.id}');closePostSaveSheet()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:13px;border:1.5px solid var(--acc);background:var(--acb);color:var(--acc);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--ff)">
-            ✅ Convert to Invoice
-          </button>`:`<button onclick="saveAndNew();closePostSaveSheet()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:13px;border:1.5px solid var(--bor);background:var(--surf);color:var(--tx);cursor:pointer;font-size:13px;font-weight:600;font-family:var(--ff)">
-            ➕ New Invoice
-          </button>`}
+
+      <!-- Actions -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${isWA ? `
+        <button onclick="openWAInv('${inv.id}');closePostSaveSheet()" style="
+          display:flex;align-items:center;gap:10px;
+          padding:13px 16px;border-radius:13px;border:none;
+          background:#25D366;color:#fff;cursor:pointer;
+          font-size:13px;font-weight:600;font-family:var(--ff);width:100%
+        ">
+          <span style="font-size:18px">💬</span>
+          <div style="text-align:left;flex:1">
+            <div>Send on WhatsApp</div>
+            <div style="font-size:10px;opacity:.85;font-weight:400">${esc(inv.customer_phone)}</div>
+          </div>
+        </button>` : ''}
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button onclick="doPrint('${inv.id}');closePostSaveSheet()" style="
+            display:flex;align-items:center;justify-content:center;gap:7px;
+            padding:12px;border-radius:12px;
+            border:1.5px solid var(--bor);background:var(--surf);
+            color:var(--tx);cursor:pointer;font-size:12px;font-weight:600;font-family:var(--ff)
+          ">🖨️ Print</button>
+
+          ${isQuot
+            ? `<button onclick="convertQuotation('${inv.id}');closePostSaveSheet()" style="
+                display:flex;align-items:center;justify-content:center;gap:7px;
+                padding:12px;border-radius:12px;
+                border:1.5px solid var(--acc);background:var(--acb);
+                color:var(--acc);cursor:pointer;font-size:12px;font-weight:600;font-family:var(--ff)
+              ">✅ Convert</button>`
+            : `<button onclick="saveAndNew();closePostSaveSheet()" style="
+                display:flex;align-items:center;justify-content:center;gap:7px;
+                padding:12px;border-radius:12px;
+                border:1.5px solid var(--bor);background:var(--surf);
+                color:var(--tx);cursor:pointer;font-size:12px;font-weight:600;font-family:var(--ff)
+              ">➕ New</button>`}
         </div>
-        <button onclick="closePostSaveSheet()" style="padding:12px;border-radius:13px;border:none;background:var(--surf2);color:var(--tx2);cursor:pointer;font-size:13px;font-family:var(--ff)">
-          Done
-        </button>
+
+        <button onclick="closePostSaveSheet()" style="
+          padding:11px;border-radius:12px;border:none;
+          background:var(--surf2);color:var(--tx2);
+          cursor:pointer;font-size:12px;font-family:var(--ff)
+        ">Done</button>
       </div>
     </div>`;
+
   sheet.addEventListener('click', e => { if(e.target===sheet) closePostSaveSheet(); });
   document.body.appendChild(sheet);
 };
