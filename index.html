@@ -982,6 +982,23 @@ const GST_CONTRACTOR_RATES = [
 ];
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Jammu & Kashmir','Ladakh','Chandigarh','Puducherry','Andaman & Nicobar Islands','Dadra & Nagar Haveli','Daman & Diu','Lakshadweep'];
 const UNITS = ['pcs','kg','g','litre','ml','box','bag','dozen','pair','set','roll','sheet','metre'];
+
+/* ── GSTIN state code → state name map ── */
+const GSTIN_STATE_MAP = {
+  '01':'Jammu & Kashmir','02':'Himachal Pradesh','03':'Punjab','04':'Chandigarh',
+  '05':'Uttarakhand','06':'Haryana','07':'Delhi','08':'Rajasthan','09':'Uttar Pradesh',
+  '10':'Bihar','11':'Sikkim','12':'Arunachal Pradesh','13':'Nagaland','14':'Manipur',
+  '15':'Mizoram','16':'Tripura','17':'Meghalaya','18':'Assam','19':'West Bengal',
+  '20':'Jharkhand','21':'Odisha','22':'Chhattisgarh','23':'Madhya Pradesh',
+  '24':'Gujarat','26':'Dadra & Nagar Haveli','27':'Maharashtra','28':'Andhra Pradesh',
+  '29':'Karnataka','30':'Goa','31':'Lakshadweep','32':'Kerala','33':'Tamil Nadu',
+  '34':'Puducherry','35':'Andaman & Nicobar Islands','36':'Telangana',
+  '37':'Andhra Pradesh','38':'Ladakh',
+};
+function stateFromGSTIN(gstin) {
+  if(!gstin || gstin.length < 2) return '';
+  return GSTIN_STATE_MAP[gstin.slice(0,2).toUpperCase()] || '';
+}
 const EXP_CATS = ['Rent','Electricity','Staff Salary','Transport','Packaging','Maintenance','Marketing','Miscellaneous'];
 const ECOL = {'Rent':'bc','Electricity':'bch','Staff Salary':'bu','Transport':'bca','Packaging':'bpu','Maintenance':'bch','Marketing':'bc','Miscellaneous':''};
 const PAY_METHODS = ['cash','upi','credit','cheque','other']; // partial is a separate toggle, not a method
@@ -1440,7 +1457,8 @@ const blankInv = () => {
     status:'paid',
     po_number:'', order_id:'',
     inv_discount:0, inv_discount_type:'pct',
-    extra_charges:0, extra_charges_label:'Freight / Packaging',
+    extra_charges:0, extra_charges_label: S.firm?.default_extra_charges_label || 'Freight / Packaging',
+    tcs_rate: S.firm?.business_nature==='contractor' ? (S.firm?.default_tds_rate||0) : 0,
     tcs_rate:0, round_off:false,
     payment_terms:0,
     items:[blankItem()]
@@ -2130,7 +2148,13 @@ function renderInvCreate() {
     </div>
     ${isReg ? `<div class="g2">
       <div class="fld"><label>Buyer GSTIN <span class="fs10 tx2">(B2B — leave blank for B2C)</span></label>
-        <input id="ic-cg" placeholder="e.g. 09AABCU9603R1ZX" value="${esc(f.customer_gstin||'')}" maxlength="15" oninput="this.value=this.value.toUpperCase()">
+        <input id="ic-cg" placeholder="e.g. 09AABCU9603R1ZX" value="${esc(f.customer_gstin||'')}" maxlength="15" oninput="
+          this.value=this.value.toUpperCase();
+          if(this.value.length>=2){
+            const st=stateFromGSTIN(this.value);
+            const pos=document.getElementById('ic-pos');
+            if(pos&&st){pos.value=st;if(S.invForm)S.invForm.place_of_supply=st;}
+          }">
       </div>
       <div class="fld"><label>Billing Address <span class="fs10 tx2">(optional)</span></label>
         <input id="ic-ca" placeholder="Buyer's billing address" value="${esc(f.customer_address||'')}">
@@ -2492,6 +2516,10 @@ function readInvInputs() {
   S.invForm.inv_discount_type= $('ic-invdisc-type')?.value||'pct';
   S.invForm.extra_charges    = Number($('ic-charges')?.value||0);
   S.invForm.extra_charges_label = $('ic-charges-lbl')?.value||'Freight / Packaging';
+  // Remember this label for next invoice
+  if(S.firm && S.invForm.extra_charges_label && S.invForm.extra_charges_label !== 'Freight / Packaging'){
+    S.firm.default_extra_charges_label = S.invForm.extra_charges_label;
+  }
   S.invForm.tcs_rate         = Number($('ic-tcs')?.value||0);
   S.invForm.round_off        = !!$('ic-roundoff')?.checked;
   // inv_type and is_igst are set directly via setInvType/setIGST — no DOM read needed
@@ -2551,6 +2579,8 @@ window.toggleMoreOpts = function() {
 /* Auto-calculate due date from payment terms */
 window.setDocType = function(dt) {
   readInvInputs();
+  // Remember last-used prefix per doc type
+  const prefixMap = S.firm._docPrefixes || {};
   S.invForm = {...S.invForm, doc_type:dt};
   render();
 };
@@ -2569,12 +2599,38 @@ window.applyPayTerms = function(days) {
 
 window.selectCustAC = function(id) {
   const c = S.customers.find(x=>x.id===id); if(!c) return;
-  const ni=$('ic-cn'), ph=$('ic-cp'), gs=$('ic-cg'), ad=$('ic-cad');
-  if(ni) ni.value=c.name;
-  if(ph && !ph.value) ph.value=c.phone||'';
-  if(gs) gs.value=c.gstin||'';
-  if(ad) ad.value=c.address||'';
-  if(S.invForm){ S.invForm.customer_name=c.name; S.invForm.customer_phone=c.phone||''; S.invForm.customer_gstin=c.gstin||''; applyPartyPrice(c.name); }
+
+  // Fill all known fields from customer master
+  const ni=$('ic-cn'), ph=$('ic-cp'), gs=$('ic-cg'), ca=$('ic-ca'), st=$('ic-st');
+  if(ni) ni.value = c.name;
+  if(ph) ph.value = c.phone||'';
+  if(gs) gs.value = c.gstin||'';
+  if(ca) ca.value = c.address||'';
+
+  // Auto-derive Place of Supply from buyer GSTIN (first 2 digits = state code)
+  const derivedState = stateFromGSTIN(c.gstin||'');
+  const pos = $('ic-pos');
+  if(pos && derivedState) pos.value = derivedState;
+
+  // Auto-fill payment terms if customer has a saved preference
+  if(S.invForm){
+    S.invForm.customer_name    = c.name;
+    S.invForm.customer_phone   = c.phone||'';
+    S.invForm.customer_gstin   = c.gstin||'';
+    S.invForm.customer_address = c.address||'';
+    if(derivedState) S.invForm.place_of_supply = derivedState;
+    if(c.payment_terms) {
+      S.invForm.payment_terms  = c.payment_terms;
+      // Set due date automatically from payment terms
+      const due = new Date(); due.setDate(due.getDate()+c.payment_terms);
+      S.invForm.due_date = due.toISOString().split('T')[0];
+    }
+    if(c.payment_method && c.payment_method!=='cash'){
+      S.invForm.payment_method = c.payment_method;
+    }
+    applyPartyPrice(c.name);
+  }
+
   const drop=$('cust-ac-drop'); if(drop) drop.style.display='none';
   showCustCard(c);
 };
@@ -2954,13 +3010,17 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   h.push('.gst-tbl td{padding:3px 6px;background:#fff!important;border-bottom:1px solid #EDE9E2}');
   h.push('.gst-tbl tfoot td{background:#F0EDE6!important;font-weight:700;border-top:1.5px solid #DDD8CF}');
   /* Totals */
-  h.push('.totals-wrap{display:flex;justify-content:flex-end;margin-bottom:8px}');
-  h.push('.totals{width:55%;border:1px solid #DDD8CF;border-bottom:none}');
-  h.push('.totals-row{display:flex;justify-content:space-between;padding:3px 10px;font-size:9.5px;color:#7A746C;border-bottom:1px solid #EDE9E2}');
+  /* Bottom layout: T&C left + totals right in same row */
+  h.push('.bottom-grid{display:grid;grid-template-columns:1fr 220px;gap:0;margin-bottom:0;align-items:start}');
+  h.push('.totals-wrap{border:1px solid #DDD8CF}');
+  h.push('.totals-row{display:flex;justify-content:space-between;padding:4px 10px;font-size:9.5px;color:#7A746C;border-bottom:1px solid #EDE9E2}');
   h.push('.totals-row.tax{color:#1C1915}');
-  h.push(`'.grand-row{background:${HDR};color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border:2px solid ${HDR}}'`);
-  h.push(".grand-row .gl{font-family:'Playfair Display',serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}");
-  h.push(".grand-row .ga{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;letter-spacing:-.3px}");
+  /* Grand total — visible with or without background color printing */
+  h.push(`'.grand-row{background:${HDR};-webkit-print-color-adjust:exact;print-color-adjust:exact;display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-top:3px solid ${ACC};border-bottom:3px solid ${ACC};margin-top:2px}'`);
+  h.push(`'.grand-row .gl{font-family:\'Playfair Display\',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#fff}'`);
+  h.push(`'.grand-row .ga{font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#fff}'`);
+  /* Fallback if background doesn't print: dark text visible on white */
+  h.push(`'@media print{.grand-row{background:${HDR}!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.grand-row .gl,.grand-row .ga{color:#fff!important}}'`);
   /* Words box */
   h.push('.words-box{border:1px solid #DDD8CF;border-top:none;padding:5px 10px;font-size:9px;color:#1C1915;font-style:italic;background:#FDFCFA;margin-bottom:7px}');
   h.push('.words-lbl{font-size:7px;font-weight:700;color:#7A746C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;font-style:normal}');
@@ -3043,8 +3103,7 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   h.push('<div class="pt-sub">');
   if(inv.customer_address) h.push(esc(inv.customer_address) + '<br>');
   if(inv.customer_phone)   h.push('Ph: ' + esc(inv.customer_phone) + '<br>');
-  if(inv.customer_gstin)   h.push('GSTIN: <b style="color:#1C1915">' + esc(inv.customer_gstin) + '</b>' + (buyerStateCode?' &nbsp;State Code: '+buyerStateCode:''));
-  else                      h.push('GSTIN: <span style="color:#AAA">—</span>');
+  if(inv.customer_gstin) h.push('GSTIN: <b style="color:#1C1915">' + esc(inv.customer_gstin) + '</b>' + (buyerStateCode?' &nbsp;State Code: '+buyerStateCode:''));
   h.push('</div></div>');
   if(hasShipTo){
     h.push('<div class="pt-box"><div class="pt-lbl">Ship To</div>');
@@ -3156,54 +3215,66 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
     h.push('</tr></tfoot></table>');
   }
 
-  // ── Totals Box ───────────────────────────────────
+  // ── Bottom section ──────────────────────────────
   h.push('</div></div>'); // close items-table-wrap + items-section
   h.push('<div class="bottom-section">');
-  h.push('<div class="totals-wrap"><div style="width:55%">');
-  h.push('<div class="totals">');
-  if(t.totalDisc>0){
-    h.push('<div class="totals-row"><span>Sub-Total</span><span>₹' + fmt(itemSubtotal) + '</span></div>');
-    h.push('<div class="totals-row"><span>Total Discount</span><span style="color:#BF4A2B">− ₹' + fmt(t.totalDisc) + '</span></div>');
-  }
-  if(isReg){
-    h.push('<div class="totals-row tax"><span>Taxable Amount</span><span>₹' + fmt(t.totalTaxable) + '</span></div>');
-    if(isIGST){
-      h.push('<div class="totals-row tax"><span>IGST</span><span>₹' + fmt(t.totalGST) + '</span></div>');
-    } else {
-      h.push('<div class="totals-row tax"><span>CGST</span><span>₹' + fmt(r2(t.totalGST/2)) + '</span></div>');
-      h.push('<div class="totals-row tax"><span>SGST</span><span>₹' + fmt(r2(t.totalGST/2)) + '</span></div>');
-    }
-    h.push('<div class="totals-row tax"><span>Total Tax</span><span>₹' + fmt(t.totalGST) + '</span></div>');
+
+  // Row 1: T&C left | Totals right
+  h.push('<div class="bottom-grid">');
+
+  // Left: T&C / Notes
+  h.push('<div style="border:1px solid #DDD8CF;border-right:none;padding:8px 10px;min-height:80px;font-size:8.5px;color:#7A746C;line-height:1.7">');
+  if(inv.notes){
+    h.push('<div style="font-size:7.5px;font-weight:700;color:#1C1915;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Terms &amp; Conditions</div>');
+    h.push(esc(inv.notes).replace(/\n/g,'<br>'));
+  } else {
+    h.push('<div style="font-size:7.5px;font-weight:700;color:#1C1915;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Terms &amp; Conditions</div>');
+    h.push('<span style="color:#CCC">—</span>');
   }
   h.push('</div>');
-  if(t.invDiscAmt>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>Invoice Discount</span><span style="color:#BF4A2B">\u2212 \u20B9' + fmt(t.invDiscAmt) + '</span></div>');
-  if(t.extraCharges>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>' + esc(inv.extra_charges_label||'Extra Charges') + '</span><span>\u20B9' + fmt(t.extraCharges) + '</span></div>');
-  if(t.tcsAmt>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>TCS</span><span>\u20B9' + fmt(t.tcsAmt) + '</span></div>');
-  if(t.roundOff) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>Round Off</span><span>' + (t.roundOff>=0?'+':'') + fmt(t.roundOff) + '</span></div>');
-    h.push('<div class="grand-row"><span class="gl">Grand Total</span><span class="ga" style="font-size:20px">₹' + fmt(inv.total) + '</span></div>');
-  h.push('</div></div>');
 
-  // ── Amount in Words ──────────────────────────────
-  h.push('<div class="words-box"><div class="words-lbl">Amount in Words</div>' + words + '</div>');
+  // Right: Totals
+  h.push('<div class="totals-wrap">');
+  if(t.totalDisc>0){
+    h.push('<div class="totals-row"><span>Sub-Total</span><span>' + fmt(itemSubtotal) + '</span></div>');
+    h.push('<div class="totals-row"><span>Discount</span><span style="color:#BF4A2B">− ' + fmt(t.totalDisc) + '</span></div>');
+  }
+  if(isReg){
+    h.push('<div class="totals-row tax"><span>Taxable</span><span>' + fmt(t.totalTaxable) + '</span></div>');
+    if(isIGST){
+      h.push('<div class="totals-row tax"><span>IGST</span><span>' + fmt(t.totalGST) + '</span></div>');
+    } else {
+      h.push('<div class="totals-row tax"><span>CGST</span><span>' + fmt(r2(t.totalGST/2)) + '</span></div>');
+      h.push('<div class="totals-row tax"><span>SGST</span><span>' + fmt(r2(t.totalGST/2)) + '</span></div>');
+    }
+    h.push('<div class="totals-row tax"><span>Total GST</span><span>' + fmt(t.totalGST) + '</span></div>');
+  } else {
+    h.push('<div class="totals-row"><span>Sub-Total</span><span>' + fmt(itemSubtotal) + '</span></div>');
+  }
+  if(t.invDiscAmt>0) h.push('<div class="totals-row"><span>Inv. Discount</span><span style="color:#BF4A2B">− ' + fmt(t.invDiscAmt) + '</span></div>');
+  if(t.extraCharges>0) h.push('<div class="totals-row"><span>' + esc(inv.extra_charges_label||'Extra Charges') + '</span><span>' + fmt(t.extraCharges) + '</span></div>');
+  if(t.tcsAmt>0) h.push('<div class="totals-row"><span>TCS</span><span>' + fmt(t.tcsAmt) + '</span></div>');
+  if(t.roundOff) h.push('<div class="totals-row"><span>Round Off</span><span>' + (t.roundOff>=0?'+':'') + fmt(t.roundOff) + '</span></div>');
+  h.push('<div class="grand-row"><span class="gl">Grand Total</span><span class="ga">' + fmt(inv.total) + '</span></div>');
+  h.push('</div>');
 
-  // ── Partial / payment notice ─────────────────────
+  h.push('</div>'); // close bottom-grid
+
+  // Row 2: Amount in Words
+  if(ps(f,'ps_show_words')) h.push('<div class="words-box"><div class="words-lbl">Amount in Words</div>' + words + '</div>');
+
+  // Partial notice
   if(inv.is_partial){
-    h.push('<div class="partial-notice">⚠️ Partial Payment — Amount Received: ₹' + fmt(inv.partial_amount) + ' &nbsp;|&nbsp; Balance Due: ₹' + fmt(r2(inv.total-(inv.partial_amount||0))) + '</div>');
+    h.push('<div class="partial-notice">⚠️ Partial Payment — Received: ' + fmt(inv.partial_amount) + ' &nbsp;|&nbsp; Balance: ' + fmt(r2(inv.total-(inv.partial_amount||0))) + '</div>');
   }
 
-  // ── Notes / Terms ────────────────────────────────
-  if(inv.notes){
-    h.push('<div class="notes-box"><b>Terms &amp; Conditions: </b>' + esc(inv.notes) + '</div>');
-  }
-
-  // ── Footer ───────────────────────────────────────
+  // Row 3: Bank | QR | Signature
   h.push('<div class="footer-section">');
-  // Bank details
   if(hasBank && ps(f,'ps_show_bank')){
-    h.push('<div class="bank-box"><div class="bhead">Payment / Bank Details</div>');
+    h.push('<div class="bank-box"><div class="bhead">Bank / Payment Details</div>');
     h.push('Beneficiary: <b>' + esc(f.bank_name||f.firm_name) + '</b><br>');
-    h.push('Account No: <b>' + esc(f.bank_acc) + '</b> &nbsp; IFSC: <b>' + esc(f.bank_ifsc) + '</b>');
-    if(f.bank_branch) h.push('<br>Bank &amp; Branch: ' + esc(f.bank_branch));
+    h.push('A/c: <b>' + esc(f.bank_acc) + '</b> &nbsp;|&nbsp; IFSC: <b>' + esc(f.bank_ifsc) + '</b>');
+    if(f.bank_branch) h.push('<br>Bank: ' + esc(f.bank_branch));
     if(f.upi_id) h.push('<br>UPI: <b>' + esc(f.upi_id) + '</b>');
     h.push('</div>');
   } else if(f.upi_id){
@@ -3211,27 +3282,27 @@ function printHTML_Firm(inv, f, t, isReg, qrURL) {
   } else {
     h.push('<div></div>');
   }
-  // QR code
-  if(qrURL && ps(f,'ps_show_qr')) h.push('<div class="qr-box"><img src="' + qrURL + '" alt="UPI QR"><div>Scan to Pay via UPI<br><b>' + esc(f.upi_id) + '</b></div></div>');
-  // Signatory
-  var sb = [];
-  sb.push('<div class="sign-block">');
-  if(f.digital_sign) sb.push('<img src="' + f.digital_sign + '">');
-  else               sb.push('<div style="height:50px"></div>');
-  sb.push('<div class="sign-line"><b>Authorised Signatory</b>' + esc(f.signatory||f.firm_name) + '</div>');
-  sb.push('</div>');
-  h.push(sb.join(''));
+  if(qrURL && ps(f,'ps_show_qr')) h.push('<div class="qr-box"><img src="' + qrURL + '" alt="UPI QR"><div>Scan to Pay<br><b>' + esc(f.upi_id) + '</b></div></div>');
+  if(ps(f,'ps_show_signatory')){
+    var sb = [];
+    sb.push('<div class="sign-block">');
+    if(f.digital_sign && ps(f,'ps_show_digital_sign')) sb.push('<img src="' + f.digital_sign + '">');
+    else sb.push('<div style="height:50px"></div>');
+    sb.push('<div class="sign-line"><b>Authorised Signatory For</b><br>' + esc(f.signatory||f.firm_name) + '</div>');
+    sb.push('</div>');
+    h.push(sb.join(''));
+  }
   h.push('</div>');
 
-  // ── Bottom note ──────────────────────────────────
+  // Row 4: Footer note
   h.push('<div class="fo">');
-  h.push('Computer Generated Invoice — ' + esc(f.firm_name));
+  h.push('Computer Generated Invoice &nbsp;|&nbsp; ' + esc(f.firm_name));
   if(f.gstin) h.push(' &nbsp;|&nbsp; GSTIN: ' + esc(f.gstin));
   h.push(' &nbsp;|&nbsp; E. &amp; O.E.');
-  if(f.state) h.push(' &nbsp;|&nbsp; Subject to ' + esc(f.state) + ' Jurisdiction');
+  if(f.state) h.push(' &nbsp;|&nbsp; ' + esc(f.state) + ' Jurisdiction');
   h.push('</div>');
-  if(ps(f,'ps_show_powered') && !f.hide_powered) h.push('<div style="font-size:6.5px;color:#bbb;text-align:center;margin-top:3px">Made with <b style="color:#BF4A2B">RetailFlow</b> &nbsp;·&nbsp; ' + APP_URL + '</div>');
-  h.push('<div style="font-size:7px;color:#aaa;text-align:right;margin-top:2px;padding-right:2px">Page 1 / 1</div>');
+  if(ps(f,'ps_show_powered') && !f.hide_powered) h.push('<div style="font-size:6.5px;color:#bbb;text-align:center;margin-top:2px">Made with <b style="color:#BF4A2B">RetailFlow</b> &nbsp;·&nbsp; ' + APP_URL + '</div>');
+  if(ps(f,'ps_show_page_no')) h.push('<div style="font-size:7px;color:#aaa;text-align:right;margin-top:2px">Page 1 / 1</div>');
 
   h.push('</div>'); // close bottom-section
   h.push('</div></div>'); // inner, frame
@@ -3310,13 +3381,14 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   h.push('.gst-tbl td{padding:3px 5px;background:#fff!important;border-bottom:1px solid #EDE9E2}');
   h.push('.gst-tbl tfoot td{background:#F0EDE6!important;font-weight:700;border-top:1.5px solid #C8C2B8}');
   /* Totals */
-  h.push('.totals-wrap{display:flex;justify-content:flex-end;margin-bottom:7px}');
-  h.push('.totals{width:55%;border:1px solid #DDD8CF;border-bottom:none}');
+  h.push('.bottom-grid{display:grid;grid-template-columns:1fr 200px;gap:0;align-items:start}');
+  h.push('.totals-wrap{border:1px solid #DDD8CF}');
   h.push('.totals-row{display:flex;justify-content:space-between;padding:3px 10px;font-size:9px;color:#7A746C;border-bottom:1px solid #EDE9E2}');
   h.push('.totals-row.tax{color:#1C1915}');
-  h.push('.grand-row{background:'+HDR+';color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border:2px solid '+HDR+'}');
-  h.push(".grand-row .gl{font-family:'Playfair Display',serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}");
-  h.push(".grand-row .ga{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;letter-spacing:-.3px}");
+  h.push('.grand-row{background:'+HDR+';-webkit-print-color-adjust:exact;print-color-adjust:exact;display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-top:3px solid '+ACC+';border-bottom:3px solid '+ACC+';margin-top:2px}');
+  h.push(".grand-row .gl{font-family:'Playfair Display',serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#fff}");
+  h.push(".grand-row .ga{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff}");
+  h.push('@media print{.grand-row{background:'+HDR+'!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.grand-row .gl,.grand-row .ga{color:#fff!important}}');
   /* Words */
   h.push('.words-box{border:1px solid #DDD8CF;border-top:none;padding:4px 10px;font-size:8.5px;font-style:italic;color:#1C1915;background:#FDFCFA;margin-bottom:6px}');
   h.push('.words-lbl{font-size:7px;font-weight:700;color:#7A746C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;font-style:normal}');
@@ -3384,14 +3456,10 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   h.push('<div class="pt-sub">');
   if(inv.customer_address) h.push(esc(inv.customer_address) + '<br>');
   if(inv.customer_phone)   h.push('Ph: ' + esc(inv.customer_phone) + '<br>');
-  if(inv.customer_gstin)   h.push('<b>GSTIN: ' + esc(inv.customer_gstin) + '</b>' + (buyerStateCode?' &nbsp;State Code: '+buyerStateCode:''));
-  else                      h.push('GSTIN: <span style="color:#BBB">—</span>');
+  if(inv.customer_gstin) h.push('<b>GSTIN: ' + esc(inv.customer_gstin) + '</b>' + (buyerStateCode?' &nbsp;State Code: '+buyerStateCode:''));
   h.push('</div></div>');
-  // Seller/Dispatch From box
-  h.push('<div class="pt-box" style="background:#FDFCFA"><div class="pt-lbl">Dispatched / Supplied By</div>');
-  h.push('<div class="pt-name">' + esc(f.firm_name) + '</div>');
-  h.push('<div class="pt-sub">' + esc(f.address) + '</div></div>');
   h.push('</div>');
+  // "Dispatched / Supplied By" removed — same as firm header, would be duplicate
 
   // ── Items Table ──────────────────────────────────
   h.push('<div class="items-section"><div class="items-table-wrap">');
@@ -3504,52 +3572,63 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
     h.push('</tr></tfoot></table>');
   }
 
-  // ── Totals Box ───────────────────────────────────
+  // ── Bottom section ──────────────────────────────
   h.push('</div></div>'); // close items-table-wrap + items-section
   h.push('<div class="bottom-section">');
-  h.push('<div class="totals-wrap"><div style="width:55%">');
-  h.push('<div class="totals">');
-  if(t.totalDisc>0){
-    h.push('<div class="totals-row"><span>Sub-Total</span><span>₹' + fmt(itemSubtotal) + '</span></div>');
-    h.push('<div class="totals-row"><span>Total Discount</span><span style="color:#BF4A2B">− ₹' + fmt(t.totalDisc) + '</span></div>');
-  }
-  if(isReg){
-    h.push('<div class="totals-row tax"><span>Taxable Amount</span><span>₹' + fmt(t.totalTaxable) + '</span></div>');
-    if(isIGST){
-      h.push('<div class="totals-row tax"><span>IGST</span><span>₹' + fmt(t.totalGST) + '</span></div>');
-    } else {
-      h.push('<div class="totals-row tax"><span>CGST</span><span>₹' + fmt(r2(t.totalGST/2)) + '</span></div>');
-      h.push('<div class="totals-row tax"><span>SGST</span><span>₹' + fmt(r2(t.totalGST/2)) + '</span></div>');
-    }
-    h.push('<div class="totals-row tax"><span>Total Tax</span><span>₹' + fmt(t.totalGST) + '</span></div>');
+
+  // Row 1: T&C left | Totals right
+  h.push('<div class="bottom-grid">');
+
+  // Left: T&C
+  h.push('<div style="border:1px solid #DDD8CF;border-right:none;padding:7px 10px;min-height:72px;font-size:8px;color:#7A746C;line-height:1.7">');
+  if(inv.notes){
+    h.push('<div style="font-size:7px;font-weight:700;color:#1C1915;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Terms &amp; Conditions</div>');
+    h.push(esc(inv.notes).replace(/\n/g,'<br>'));
+  } else {
+    h.push('<div style="font-size:7px;font-weight:700;color:#1C1915;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Terms &amp; Conditions</div>');
+    h.push('<span style="color:#CCC">—</span>');
   }
   h.push('</div>');
-  if(t.invDiscAmt>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>Invoice Discount</span><span style="color:#BF4A2B">\u2212 \u20B9' + fmt(t.invDiscAmt) + '</span></div>');
-  if(t.extraCharges>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>' + esc(inv.extra_charges_label||'Extra Charges') + '</span><span>\u20B9' + fmt(t.extraCharges) + '</span></div>');
-  if(t.tcsAmt>0) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>TCS</span><span>\u20B9' + fmt(t.tcsAmt) + '</span></div>');
-  if(t.roundOff) h.push('<div class="totals-row" style="display:flex;justify-content:space-between;font-size:10px;padding:3px 0"><span>Round Off</span><span>' + (t.roundOff>=0?'+':'') + fmt(t.roundOff) + '</span></div>');
-    h.push('<div class="grand-row"><span class="gl">Grand Total</span><span class="ga" style="font-size:20px">₹' + fmt(inv.total) + '</span></div>');
-  h.push('</div></div>');
 
-  // ── Amount in Words ──────────────────────────────
+  // Right: Totals
+  h.push('<div class="totals-wrap">');
+  if(!isReg || t.totalDisc>0){
+    h.push('<div class="totals-row"><span>Sub-Total</span><span>' + fmt(itemSubtotal) + '</span></div>');
+  }
+  if(t.totalDisc>0) h.push('<div class="totals-row"><span>Discount</span><span style="color:#BF4A2B">− ' + fmt(t.totalDisc) + '</span></div>');
+  if(isReg){
+    h.push('<div class="totals-row tax"><span>Taxable</span><span>' + fmt(t.totalTaxable) + '</span></div>');
+    if(isIGST){
+      h.push('<div class="totals-row tax"><span>IGST</span><span>' + fmt(t.totalGST) + '</span></div>');
+    } else {
+      h.push('<div class="totals-row tax"><span>CGST</span><span>' + fmt(r2(t.totalGST/2)) + '</span></div>');
+      h.push('<div class="totals-row tax"><span>SGST</span><span>' + fmt(r2(t.totalGST/2)) + '</span></div>');
+    }
+    h.push('<div class="totals-row tax"><span>Total GST</span><span>' + fmt(t.totalGST) + '</span></div>');
+  }
+  if(t.invDiscAmt>0) h.push('<div class="totals-row"><span>Inv. Discount</span><span style="color:#BF4A2B">− ' + fmt(t.invDiscAmt) + '</span></div>');
+  if(t.extraCharges>0) h.push('<div class="totals-row"><span>' + esc(inv.extra_charges_label||'Extra Charges') + '</span><span>' + fmt(t.extraCharges) + '</span></div>');
+  if(t.tcsAmt>0) h.push('<div class="totals-row"><span>TCS</span><span>' + fmt(t.tcsAmt) + '</span></div>');
+  if(t.roundOff) h.push('<div class="totals-row"><span>Round Off</span><span>' + (t.roundOff>=0?'+':'') + fmt(t.roundOff) + '</span></div>');
+  h.push('<div class="grand-row"><span class="gl">Grand Total</span><span class="ga">' + fmt(inv.total) + '</span></div>');
+  h.push('</div>');
+
+  h.push('</div>'); // close bottom-grid
+
+  // Row 2: Amount in Words
   if(ps(f,'ps_show_words')) h.push('<div class="words-box"><div class="words-lbl">Amount in Words</div>' + words + '</div>');
 
-  // ── Partial notice ───────────────────────────────
+  // Partial notice
   if(inv.is_partial){
-    h.push('<div class="partial-notice">⚠️ Partial Payment — Amount Received: ₹' + fmt(inv.partial_amount) + ' &nbsp;|&nbsp; Balance Due: ₹' + fmt(r2(inv.total-(inv.partial_amount||0))) + '</div>');
+    h.push('<div class="partial-notice">⚠️ Partial — Received: ' + fmt(inv.partial_amount) + ' &nbsp;|&nbsp; Balance: ' + fmt(r2(inv.total-(inv.partial_amount||0))) + '</div>');
   }
 
-  // ── Notes / T&C ──────────────────────────────────
-  if(inv.notes){
-    h.push('<div class="notes-box"><b>Terms &amp; Conditions: </b>' + esc(inv.notes) + '</div>');
-  }
-
-  // ── Footer ───────────────────────────────────────
+  // Row 3: Bank | QR | Signature
   h.push('<div class="footer-section">');
   if(hasBank && ps(f,'ps_show_bank')){
-    h.push('<div class="bank-box"><div class="bhead">Payment / Bank Details</div>');
+    h.push('<div class="bank-box"><div class="bhead">Bank / Payment Details</div>');
     h.push('Beneficiary: <b>' + esc(f.bank_name||f.firm_name) + '</b><br>');
-    h.push('A/c No: <b>' + esc(f.bank_acc) + '</b> &nbsp; IFSC: <b>' + esc(f.bank_ifsc) + '</b>');
+    h.push('A/c: <b>' + esc(f.bank_acc) + '</b> &nbsp;|&nbsp; IFSC: <b>' + esc(f.bank_ifsc) + '</b>');
     if(f.bank_branch) h.push('<br>Bank: ' + esc(f.bank_branch));
     if(f.upi_id) h.push('<br>UPI: <b>' + esc(f.upi_id) + '</b>');
     h.push('</div>');
@@ -3558,25 +3637,26 @@ function printHTML_Retail(inv, f, t, isReg, qrURL) {
   } else {
     h.push('<div></div>');
   }
-  if(qrURL && ps(f,'ps_show_qr')) h.push('<div class="qr-box"><img src="' + qrURL + '" alt="UPI QR"><div>Scan to Pay via UPI<br><b>' + esc(f.upi_id) + '</b></div></div>');
-  // Signatory
-  var sb = [];
-  sb.push('<div class="sign-block">');
-  if(f.digital_sign) sb.push('<img src="' + f.digital_sign + '">');
-  else               sb.push('<div style="height:46px"></div>');
-  sb.push('<div class="sign-line"><b>Authorised Signatory</b>' + esc(f.signatory||f.firm_name) + '</div>');
-  sb.push('</div>');
-  h.push(sb.join(''));
+  if(qrURL && ps(f,'ps_show_qr')) h.push('<div class="qr-box"><img src="' + qrURL + '" alt="UPI QR"><div>Scan to Pay<br><b>' + esc(f.upi_id) + '</b></div></div>');
+  if(ps(f,'ps_show_signatory')){
+    var sb = [];
+    sb.push('<div class="sign-block">');
+    if(f.digital_sign && ps(f,'ps_show_digital_sign')) sb.push('<img src="' + f.digital_sign + '">');
+    else sb.push('<div style="height:46px"></div>');
+    sb.push('<div class="sign-line"><b>Authorised Signatory For</b><br>' + esc(f.signatory||f.firm_name) + '</div>');
+    sb.push('</div>');
+    h.push(sb.join(''));
+  }
   h.push('</div>');
 
-  // ── Footer note ──────────────────────────────────
+  // Row 4: Footer note
   h.push('<div class="fo">');
-  h.push('Computer Generated Invoice — ' + esc(f.firm_name));
+  h.push('Computer Generated Invoice &nbsp;|&nbsp; ' + esc(f.firm_name));
   if(f.gstin) h.push(' &nbsp;|&nbsp; GSTIN: ' + esc(f.gstin));
   h.push(' &nbsp;|&nbsp; E. &amp; O.E.');
-  if(f.state) h.push(' &nbsp;|&nbsp; Subject to ' + esc(f.state) + ' Jurisdiction');
+  if(f.state) h.push(' &nbsp;|&nbsp; ' + esc(f.state) + ' Jurisdiction');
   h.push('</div>');
-  if(ps(f,'ps_show_powered') && !f.hide_powered) h.push('<div style="font-size:6.5px;color:#bbb;text-align:center;margin-top:3px">Made with <b style="color:#BF4A2B">RetailFlow</b> &nbsp;&middot;&nbsp; ' + APP_URL + '</div>');
+  if(ps(f,'ps_show_powered') && !f.hide_powered) h.push('<div style="font-size:6.5px;color:#bbb;text-align:center;margin-top:2px">Made with <b style="color:#BF4A2B">RetailFlow</b> &nbsp;·&nbsp; ' + APP_URL + '</div>');
 
   h.push('</div>'); // close bottom-section
   h.push('</div>'); // close page-body
@@ -3923,8 +4003,18 @@ function renderTransactions(tP, tE) {
   const purchForm = `<div class="card mb14">
     <div class="ctitle">📦 Add Purchase</div>
     <div class="g2">
-      <div class="fld"><label>Supplier *</label><input id="p-sp" value="${esc(pf.supplier)}" placeholder="Supplier / Vendor"></div>
-      <div class="fld"><label>Item / Goods</label><input id="p-it" value="${esc(pf.item)}" placeholder="Description"></div>
+      <div class="fld" style="position:relative">
+        <label>Supplier *</label>
+        <input id="p-sp" value="${esc(pf.supplier)}" placeholder="Supplier / Vendor" autocomplete="off"
+          oninput="showSupplierAC(this.value)" onblur="setTimeout(()=>{const d=$('sup-ac-drop');if(d)d.style.display='none';},150)">
+        <div id="sup-ac-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surf);border:1.5px solid var(--acc);border-radius:0 0 10px 10px;z-index:200;max-height:160px;overflow-y:auto;box-shadow:var(--sh)"></div>
+      </div>
+      <div class="fld">
+        <label>Item / Goods</label>
+        <input id="p-it" value="${esc(pf.item)}" placeholder="Description" list="p-it-ac"
+          oninput="autofillPurchaseItem(this.value)">
+        <datalist id="p-it-ac">${[...new Set(S.purchases.map(p=>p.item).filter(Boolean))].map(i=>`<option value="${esc(i)}">`).join('')}</datalist>
+      </div>
     </div>
     <div class="g3">
       <div class="fld"><label>Amount ₹ *</label><input id="p-am" type="number" value="${esc(pf.amount)}" placeholder="0"></div>
@@ -3945,10 +4035,17 @@ function renderTransactions(tP, tE) {
       <div class="fld"><label>Category</label>
         <select id="ef-cat">${EXP_CATS.map(c=>`<option value="${c}"${c===ef.category?' selected':''}>${c}</option>`).join('')}</select>
       </div>
-      <div class="fld"><label>Amount ₹ *</label><input id="ef-am" type="number" placeholder="0" value="${esc(ef.amount)}"></div>
+      <div class="fld">
+        <label>Amount ₹ * <span class="fs10 tx2" id="ef-last-hint">${(()=>{const last=S.expenses.filter(e=>e.category===ef.category).sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];return last?'Last: '+fmt(last.amount):'';})()}</span></label>
+        <input id="ef-am" type="number" placeholder="0" value="${esc(ef.amount)}">
+      </div>
     </div>
     <div class="g2">
-      <div class="fld"><label>Description</label><input id="ef-desc" placeholder="e.g. August rent" value="${esc(ef.description)}"></div>
+      <div class="fld">
+        <label>Description</label>
+        <input id="ef-desc" placeholder="${(()=>{const last=S.expenses.filter(e=>e.category===ef.category).sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];return last&&last.description?'e.g. '+esc(last.description):'e.g. August rent';})()}" value="${esc(ef.description)}" list="ef-desc-ac">
+        <datalist id="ef-desc-ac">${[...new Set(S.expenses.filter(e=>e.category===ef.category).map(e=>e.description).filter(Boolean))].map(d=>`<option value="${esc(d)}">`).join('')}</datalist>
+      </div>
       <div class="fld"><label>Date</label><input id="ef-dt" type="date" value="${ef.date}"></div>
     </div>
     <button class="btn bpri" onclick="saveExpense()">Add Expense</button>
@@ -4190,7 +4287,7 @@ function renderSalesTab(){
     + '<div class="card mb14"><div class="ctitle">+ Log Quick Sale</div>'
     + '<div class="g2">'
     + '<div class="fld"><label>Customer / Description *</label>'
-    + '<input id="s-cu" value="'+esc(sf.customer)+'" placeholder="Customer name or Walk-in" list="scust-ac">'
+    + '<input id="s-cu" value="'+esc(sf.customer)+'" placeholder="Customer name or Walk-in" list="scust-ac" oninput="autofillSaleCustomer(this.value)">'
     + '<datalist id="scust-ac">'+S.customers.map(function(c){ return '<option value="'+esc(c.name)+'">';}).join('')+'</datalist></div>'
     + '<div class="fld"><label>Amount (₹) *</label>'
     + '<input id="s-am" type="number" value="'+esc(sf.amount)+'" placeholder="0"></div>'
@@ -5735,6 +5832,13 @@ function renderEditFirmModal() {
       </div>
 
       <div class="sechead">Invoice Defaults</div>
+      ${f.business_nature==='contractor'?`
+      <div class="fld">
+        <label>Default TDS Rate <span class="fs10 tx2">(auto-applied on contractor invoices)</span></label>
+        <div class="tgl mt6">
+          ${[0,1,2].map(r=>`<button class="${(f.default_tds_rate||0)===r?'on':''}" onclick="S.firm.default_tds_rate=${r};render()">${r===0?'None':r+'%'}</button>`).join('')}
+        </div>
+      </div>`:''}
       <div class="fld" style="margin-bottom:8px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px">
           <input type="checkbox" id="efm-hidepowered" ${f.hide_powered?'checked':''} style="width:15px;height:15px">
@@ -5951,6 +6055,7 @@ window.saveEditFirm = () => {
     website: g('efm-web'),
     default_notes: document.getElementById('efm-notes')?.value?.trim() || '',
     default_tnc: document.getElementById('efm-tnc')?.value?.trim() || S.firm.default_tnc || '',
+    default_tds_rate: S.firm?.default_tds_rate||0,
     hide_powered: !!document.getElementById('efm-hidepowered')?.checked,
     // Preserve all print settings (managed separately via togglePS/setPSTemplate)
     ...Object.fromEntries(
@@ -6341,7 +6446,7 @@ window.saveInvoice = () => {
   };
   commitInvNo(key, n);
   S.invoices = [inv, ...S.invoices];
-  upsertCust(f.customer_name, f.customer_phone, pm, t.grandTotal, isPar ? balance : (pm==='credit'?t.grandTotal:0), f.due_date||'');
+  upsertCust(f.customer_name, f.customer_phone, pm, t.grandTotal, isPar ? balance : (pm==='credit'?t.grandTotal:0), f.due_date||'', {gstin:f.customer_gstin||'', address:f.customer_address||'', payment_terms:f.payment_terms||0});
   // Deduct inventory stock (name-based match, case-insensitive)
   const missedItems = [];
   f.items.forEach(it=>{
@@ -6592,8 +6697,8 @@ window.printPayReceipt = async function(id) {
   if(inv.customer_phone) h.push('<div class="rcpt-row"><span class="lk">Phone</span><span>' + esc(inv.customer_phone) + '</span></div>');
   h.push('<div class="rcpt-row"><span class="lk">Payment Method</span><span>' + (inv.payment_method||'cash').toUpperCase() + '</span></div>');
   const bal = r2(Number(inv.total) - paid);
-  if(bal > 0) h.push('<div class="rcpt-row"><span class="lk">Balance Remaining</span><span style="color:#BF4A2B;font-weight:700">₹' + fmt(bal) + '</span></div>');
-  h.push('<div class="amount-row"><span class="al">Amount Received</span><span class="av">₹' + fmt(paid) + '</span></div>');
+  if(bal > 0) h.push('<div class="rcpt-row"><span class="lk">Balance Remaining</span><span style="color:#BF4A2B;font-weight:700">' + fmt(bal) + '</span></div>');
+  h.push('<div class="amount-row"><span class="al">Amount Received</span><span class="av">' + fmt(paid) + '</span></div>');
   h.push('<div class="words">' + amountInWords(paid) + '</div>');
   if(f.bank_acc){
     h.push('<div class="rcpt-row"><span class="lk">A/c No</span><span>' + esc(f.bank_acc) + '</span></div>');
@@ -6626,6 +6731,47 @@ window.printPayReceipt = async function(id) {
 };
 
 /* ── SAVE PURCHASE ──────────────────────────────── */
+/* ── Supplier autocomplete ── */
+window.showSupplierAC = function(val) {
+  const drop = document.getElementById('sup-ac-drop'); if(!drop) return;
+  const suppliers = [...new Set(S.purchases.map(p=>p.supplier).filter(Boolean))];
+  const q = val.toLowerCase();
+  const matches = suppliers.filter(s=>s.toLowerCase().includes(q)).slice(0,8);
+  if(!matches.length || !val){ drop.style.display='none'; return; }
+  drop.innerHTML = matches.map(s=>`
+    <div onclick="selectSupplierAC(${JSON.stringify(s)})"
+      style="padding:9px 13px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--bor)"
+      onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background=''">
+      ${esc(s)}
+      ${(()=>{const last=S.purchases.filter(p=>p.supplier===s).sort((a,b)=>b.date.localeCompare(a.date))[0];return last?`<span style="font-size:10px;color:var(--tx2);margin-left:8px">Last: ${fmt(last.amount)} · ${fmtDate(last.date)}</span>`:''})()}
+    </div>`).join('');
+  drop.style.display = 'block';
+};
+
+window.selectSupplierAC = function(name) {
+  const inp = document.getElementById('p-sp');
+  if(inp) inp.value = name;
+  const drop = document.getElementById('sup-ac-drop');
+  if(drop) drop.style.display = 'none';
+  // Auto-fill last used item and GST rate for this supplier
+  const last = S.purchases.filter(p=>p.supplier===name).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  if(last){
+    const it = document.getElementById('p-it');
+    const gr = document.getElementById('p-gst');
+    if(it && !it.value) it.value = last.item||'';
+    if(gr) gr.value = last.gst_rate||18;
+    if(S.pForm){ S.pForm.supplier=name; S.pForm.item=last.item||''; S.pForm.gst_rate=last.gst_rate||18; }
+  }
+};
+
+/* ── Auto-fill purchase item from inventory ── */
+window.autofillPurchaseItem = function(name) {
+  const inv = S.inventory.find(i=>i.name.toLowerCase()===name.toLowerCase());
+  if(!inv) return;
+  const gr = document.getElementById('p-gst');
+  if(gr) gr.value = inv.gst_rate||18;
+};
+
 window.savePurch = () => {
   const sup=$('p-sp')?.value?.trim(), amt=Number($('p-am')?.value);
   if(!sup||!amt){ alert('Fill supplier and amount.'); return; }
@@ -6637,6 +6783,18 @@ window.savePurch = () => {
 window.delP = id => { if(!confirm('Delete?'))return; S.purchases=S.purchases.filter(p=>p.id!==id); save(); render(); };
 
 /* ── SAVE SALE ──────────────────────────────────── */
+window.autofillSaleCustomer = function(name) {
+  const c = S.customers.find(x=>x.name.toLowerCase()===name.toLowerCase());
+  if(!c) return;
+  // Auto-set payment type from customer preference
+  if(c.payment_method && S.sForm){
+    const pt = c.payment_method==='credit' ? 'credit' : (c.payment_method==='upi'?'upi':'cash');
+    S.sForm.payment_type = pt;
+    const btn = document.querySelector(`[onclick="setSPT('${pt}')"]`);
+    if(btn){ document.querySelectorAll('[onclick^="setSPT"]').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); }
+  }
+};
+
 window.saveSale = () => {
   clearFieldErrors();
   const cu=($('s-cu')?.value||'').trim();
@@ -6822,24 +6980,34 @@ window.newInvForCust = function(custId) {
 // doPrint is defined earlier (async, handles QR + Blob) — no duplicate needed here
 
 /* ── CUSTOMER HELPERS ───────────────────────────── */
-function upsertCust(name, phone, pay, amount, outstanding, dueDate) {
+function upsertCust(name, phone, pay, amount, outstanding, dueDate, opts={}) {
+  // opts: { gstin, address, payment_terms }
   const ex=S.customers.find(c=>c.name.toLowerCase()===name.toLowerCase());
   const outAmt = outstanding !== undefined ? outstanding : (pay==='credit'?amount:0);
   if(ex){
-    // Keep EARLIEST due_date — not the latest invoice's date
     const earliestDue = ex.due_date && dueDate
       ? (dueDate < ex.due_date ? dueDate : ex.due_date)
       : (dueDate || ex.due_date || '');
     S.customers=S.customers.map(c=>c.name.toLowerCase()===name.toLowerCase()?{
       ...c,
-      total_business: r2((c.total_business||0)+amount),
+      total_business : r2((c.total_business||0)+amount),
       outstanding    : r2((c.outstanding||0)+outAmt),
-      last_date:today(), payment_method:pay,
-      phone: phone||c.phone||'',
-      due_date: earliestDue
+      last_date: today(), payment_method: pay,
+      phone    : phone||c.phone||'',
+      due_date : earliestDue,
+      // Persist extra fields if provided and not already set
+      gstin    : opts.gstin    || c.gstin    || '',
+      address  : opts.address  || c.address  || '',
+      payment_terms: opts.payment_terms!==undefined ? opts.payment_terms : (c.payment_terms||0),
     }:c);
   } else {
-    S.customers=[...S.customers,{id:uid(),name,phone:phone||'',payment_method:pay,total_business:r2(amount),outstanding:r2(outAmt),last_date:today(),due_date:dueDate||''}];
+    S.customers=[...S.customers,{
+      id:uid(), name, phone:phone||'', payment_method:pay,
+      total_business:r2(amount), outstanding:r2(outAmt),
+      last_date:today(), due_date:dueDate||'',
+      gstin:opts.gstin||'', address:opts.address||'',
+      payment_terms:opts.payment_terms||0,
+    }];
   }
 }
 window.delCust = id => { if(!confirm('Delete customer? Their invoices remain.'))return; S.customers=S.customers.filter(c=>c.id!==id); save(); render(); };
