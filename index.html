@@ -965,21 +965,35 @@ function renderAuthScreen(){
 }
 
 /* ── CONSTANTS ──────────────────────────────────── */
-// Standard slabs — used in setup, settings, purchase form
-const GST_SLABS = [0, 5, 12, 18, 28, 40];
-
-// Extended slabs — used in item master (covers all special rates)
-const GST_SLABS_EXTENDED = [0, 0.1, 0.25, 1.5, 3, 5, 12, 18, 28, 40];
-
-// Contractor-specific GST reference map
-// Works contract rates under GST (Notification 11/2017-CT(Rate))
-const GST_CONTRACTOR_RATES = [
-  { rate: 0,  label: '0% — Unprocessed natural materials (sand, earth, gravel)' },
-  { rate: 5,  label: '5% — Affordable housing construction services (no ITC)' },
-  { rate: 12, label: '12% — Works contract: Govt / Railways / Affordable residential' },
-  { rate: 18, label: '18% — Works contract: Commercial / Industrial / Roads / Bridges' },
-  { rate: 28, label: '28% — Cement, tiles, glass, paints, waterproofing compounds' },
+/* ══════════════════════════════════════════════════
+   OFFICIAL GST RATE SLABS — India
+   As per GST Council notifications (all rates)
+   User must select from this list only.
+══════════════════════════════════════════════════ */
+const GST_ALL_SLABS = [
+  { rate: 0,    label: '0%  — Exempt (food grains, milk, eggs, fresh vegetables, salt)' },
+  { rate: 0.1,  label: '0.1% — Cut & polished diamonds, precious stones' },
+  { rate: 0.25, label: '0.25% — Rough precious & semi-precious stones' },
+  { rate: 1.5,  label: '1.5% — Job work on diamonds / precious stones' },
+  { rate: 3,    label: '3%  — Gold, silver, platinum jewellery & articles' },
+  { rate: 5,    label: '5%  — Household necessities, coal, transport, affordable housing' },
+  { rate: 6,    label: '6%  — Certain textile job work (composition scheme)' },
+  { rate: 12,   label: '12% — Processed food, computers, business travel, works contract (govt)' },
+  { rate: 18,   label: '18% — Standard rate — most goods & services, works contract (commercial)' },
+  { rate: 28,   label: '28% — Luxury: cars, AC, tobacco, cement, tiles, paints, waterproofing' },
 ];
+
+// Helper: build <option> elements for a select, with optional pre-selected rate
+function gstOptions(selectedRate) {
+  return GST_ALL_SLABS.map(s =>
+    `<option value="${s.rate}"${Number(selectedRate)===s.rate?' selected':''}>${s.label}</option>`
+  ).join('');
+}
+
+// Legacy aliases — kept so any code referencing these still works
+const GST_SLABS          = GST_ALL_SLABS.map(s=>s.rate);
+const GST_SLABS_EXTENDED = GST_ALL_SLABS.map(s=>s.rate);
+const GST_CONTRACTOR_RATES = GST_ALL_SLABS.filter(s=>[0,5,12,18,28].includes(s.rate));
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Jammu & Kashmir','Ladakh','Chandigarh','Puducherry','Andaman & Nicobar Islands','Dadra & Nagar Haveli','Daman & Diu','Lakshadweep'];
 const UNITS = ['pcs','kg','g','litre','ml','box','bag','dozen','pair','set','roll','sheet','metre'];
 
@@ -1611,7 +1625,7 @@ function renderSetup() {
       </div>
     </div>
     <div class="fld"><label>Default GST Rate</label>
-      <input id="sf-gr" type="number" min="0" max="100" step="0.1" value="18" placeholder="18" title="Default GST rate %">
+      <select id="sf-gr">${gstOptions(18)}</select>
     </div>`:'<input type="hidden" id="sf-gs" value=""><input type="hidden" id="sf-st" value=""><input type="hidden" id="sf-gr" value="0">'}
 
     <!-- Payment details — contextual -->
@@ -2401,7 +2415,7 @@ function renderItemRows() {
       <td><input class="iinput" data-id="${it.id}" data-f="qty" type="number" min="1" step="1" value="${it.qty}" style="width:52px"></td>
       <td><input class="iinput" data-id="${it.id}" data-f="rate" type="number" min="0" step="0.01" value="${it.rate}" style="width:76px"></td>
       <td><input class="iinput" data-id="${it.id}" data-f="discount" type="number" min="0" max="100" step="1" value="${it.discount||0}" style="width:55px"></td>
-      ${isReg?`<td><input class="iinput" data-id="${it.id}" data-f="gst_rate" type="number" min="0" max="100" step="0.1" value="${it.gst_rate}" style="width:58px" title="GST rate %" placeholder="18"></td>
+      ${isReg?`<td><select class="iinput" data-id="${it.id}" data-f="gst_rate" style="width:70px;font-size:10px">${gstOptions(it.gst_rate)}</select></td>
         <td><input class="iinput ro" data-taxable="${it.id}" value="${fmt(c.taxable)}" readonly style="width:78px;font-size:11px"></td>
         <td><input class="iinput ro" data-gstamt="${it.id}" value="${fmt(c.gstAmt)}" readonly style="width:66px;font-size:11px;color:var(--red)"></td>` : ''}
       <td><input class="iinput ro" id="ia-${it.id}" value="${fmt(c.total)}" readonly style="width:86px;font-weight:600"></td>
@@ -4024,7 +4038,7 @@ function renderTransactions(tP, tE) {
       </div>
     </div>
     ${S.firm.gst_registered?`<div class="fld" style="max-width:180px"><label>GST Rate</label>
-      <input id="p-gst" type="number" min="0" max="100" step="0.1" value="${Number(pf.gst_rate||18)}" placeholder="18" style="width:80px" title="GST rate %">
+      <select id="p-gst">${gstOptions(pf.gst_rate||18)}</select>
     </div>`:''}
     <button class="btn bpri" onclick="savePurch()">Add Purchase</button>
   </div>`;
@@ -5359,7 +5373,7 @@ function renderInventoryMode(){
     <div class="g3">
       ${S.firm.gst_registered?`
       <div class="fld"><label>GST Rate</label>
-        <input id="ii-gr" type="number" min="0" max="100" step="0.1" value="${iif.gst_rate}" placeholder="18" title="GST rate %">
+        <select id="ii-gr">${gstOptions(iif.gst_rate)}</select>
       </div>
       <div class="fld"><label>HSN / SAC Code</label>
         <input id="ii-hsn" value="${esc(iif.hsn||'')}" placeholder="e.g. 1701" maxlength="8">
@@ -5776,7 +5790,7 @@ function renderEditFirmModal() {
         </div>
       </div>
       <div class="fld"><label>Default Item GST Rate</label>
-        <input id="efm-gr" type="number" min="0" max="100" step="0.1" value="${esc(v('gr', f.default_gst_rate||18))}" placeholder="18" title="Default GST rate %">
+        <select id="efm-gr">${gstOptions(v('gr', f.default_gst_rate||18)||18)}</select>
       </div>` : `<input type="hidden" id="efm-gs" value=""><input type="hidden" id="efm-st" value=""><input type="hidden" id="efm-gr" value="0">`}
 
       <div class="sechead">Business Classification</div>
